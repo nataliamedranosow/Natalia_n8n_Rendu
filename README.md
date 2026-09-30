@@ -89,16 +89,16 @@ Le calcul est fait par du code et non par l'IA : il est reproductible et vérifi
 
 ## Résultats des tests
 
-Les nœuds 06, 10 et 14 ont été rejoués sur des **données réelles** (offres Adzuna du jour, registre officiel de 143 136 lignes, 12 appels réels à Gemini) :
+Les nœuds 06, 10, 12 et 14 ont été rejoués sur des **données réelles** (offres Reed et Adzuna du jour, registre officiel de 143 136 lignes, 12 appels réels à Gemini) :
 
 | Étape | Offres restantes |
 |---|---|
-| Collecte Adzuna (4 recherches, doublons retirés) | 127 |
-| Après C1 à C4 | 69 |
-| Après le registre des sponsors (C5) | **27** |
-| Après analyse par Gemini (12 premières) | 1 à 2 |
+| Collecte Reed + Adzuna (doublons retirés) | 339 |
+| Après C1 à C4 | 146 |
+| Après le registre des sponsors (C5) | **48** |
+| Après analyse par Gemini (12 premières) | **4 retenues** |
 
-Le détail, les défauts trouvés et corrigés (salaires mensuels, seuil trop strict, noms de sponsors, double e-mail) sont dans [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md).
+Le détail, les défauts trouvés et corrigés (salaires mensuels, seuil trop strict, contrat temporaire pris pour un freelance, noms de sponsors, double e-mail) sont dans [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md).
 
 ## Lancer les tests
 
@@ -114,6 +114,7 @@ node tests/run-all.js
 | `test-sponsors.js` | Règle C5 : rapprochement des noms avec un faux registre |
 | `test-score.js` | Salaires, règles C4 et C6 à C10, score |
 | `test-memorisation.js` | Nœud 16 : e-mail et liste des offres mémorisées |
+| `test-prompt-ia.js` | Nœud 12 : consigne envoyée à Gemini (contrat temporaire ou freelance) |
 
 ## Les 3 skills Claude Code
 
@@ -140,7 +141,6 @@ node tests/run-all.js
 
 - Quota gratuit de Gemini : 15 requêtes par minute, d'où la limite de 12 offres analysées par exécution.
 - Le rendement reste modeste : la plupart des offres Data à Londres sont dans le secteur « autre », peu valorisé par le score.
-- La source Reed n'a pas pu être rejouée dans les tests sur données réelles (clé non disponible pour ce test).
 - La mémoire anti-doublon n'est testable qu'après activation du workflow.
 
 ## Outils et transparence

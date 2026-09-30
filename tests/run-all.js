@@ -1,6 +1,6 @@
 // Lance tous les tests : node tests/run-all.js
 const { spawnSync } = require('child_process');
-const fichiers = ['test-regles-titres.js', 'test-sponsors.js', 'test-score.js', 'test-memorisation.js'];
+const fichiers = ['test-regles-titres.js', 'test-sponsors.js', 'test-score.js', 'test-memorisation.js', 'test-prompt-ia.js'];
 let ok = true;
 for (const f of fichiers) {
   console.log(`\n=== ${f} ===`);

@@ -63,9 +63,10 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 | D14 | Seules les offres traitées sont mémorisées. | Si le nœud 16 mémorise toutes les offres, alors celles qui dépassent le Top 10 ne reviennent jamais ; s'il n'en mémorise aucune rejetée, alors les mêmes 12 offres refusées reprennent la place à chaque fois. | Élevé | *Testé* (13 offres simulées) : sont mémorisées les offres du Top 10 et celles rejetées par C4, C6 à C10 ; les offres valables hors Top 10 ne le sont pas, conformément au cahier des charges. | Vérifié | **Corrigé** (nœud 16). |
 | D15 | Les salaires d'Adzuna sont interprétés correctement. | Si une offre indique 3 120 (montant mensuel), alors elle est lue comme 3 120 par an et rejetée par C9. | Élevé | *Observé sur données réelles* : deux offres Tripledot Studios (3 120, temps partiel) étaient exclues par C9. *Testé* : une valeur de 1 000 à 9 999 est maintenant lue comme mensuelle (3 120 devient 37 440 par an). | Vérifié | **Corrigé** (nœud 14). |
 | D16 | Le seuil de score 60 laisse passer des offres. | Si une offre d'un secteur « autre » a des compétences correctes, alors elle ne peut presque jamais atteindre 60. | Élevé | *Observé sur données réelles* : sur 12 offres analysées par Gemini, 1 seule dépassait 60 ; 5 étaient exclues par C10, dont « Data & AI Analyst » à 52,5. | Vérifié | **Corrigé** : seuil abaissé de 60 à 50 (prévu comme réglable dans l'annexe C du cahier des charges). |
+| D17 | L'IA distingue un contrat temporaire salarié d'un freelance. | Si Gemini classe un poste « temporaire, 15 mois, salaire annuel » comme freelance, alors la règle C4 l'exclut à tort. | Élevé | *Observé sur données réelles* : « FP&A Analyst » (Robert Half, 60 à 70 k£, finance, poste temporaire de 15 mois) était classé `contractor_freelance` et exclu par C4, alors qu'il obtenait 88/100. *Testé* : après précision de la consigne (freelance seulement si tarif journalier, umbrella, outside IR35), il est classé `fixed_term`, retenu à 82/100 ; les vrais contrats à la journée restent exclus. | Vérifié | **Corrigé** (consigne du nœud 12). |
 
 ### Bilan du doute
-- **Corrigés** : D1, D2, D3, D4, D5, D6, D12, D14, D15, D16.
+- **Corrigés** : D1, D2, D3, D4, D5, D6, D12, D14, D15, D16, D17.
 - **Gardés après vérification** : D7, D13.
 - **Documentés (à surveiller en réel)** : D8, D9, D10, D11.
 - **Tests automatiques** : 4 fichiers dans `tests/` (voir le README), tous verts. **Test sur données réelles** : voir la section suivante. **Non réalisé** : source Reed (clé non disponible pour ce test) et envoi d'e-mail réel depuis ce test.
@@ -73,20 +74,24 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 
 ### Test sur données réelles
 
-Pour ne pas se fier à des cas inventés, les vrais nœuds 06, 10 et 14 ont été rejoués sur des données réelles : 4 recherches Adzuna (Londres, 14 derniers jours), le registre officiel des sponsors du jour (143 136 lignes, dont 123 103 « Skilled Worker »), et 12 appels réels à Gemini.
+Pour ne pas se fier à des cas inventés, les vrais nœuds 06, 10, 12 et 14 ont été rejoués sur des données réelles : 4 recherches **Reed** (358 offres) et 4 recherches **Adzuna** (137 offres) à Londres, le registre officiel des sponsors du jour (143 136 lignes, dont 123 103 « Skilled Worker »), et 12 appels réels à Gemini.
 
 | Étape | Offres | Détail |
 |---|---|---|
-| Collecte Adzuna (4 recherches) | 137 (127 après retrait des doublons) | Publiées il y a 0 à 2 jours |
-| Après règles C1 à C4 (nœud 06) | 127 | C3 (postes seniors) : 56 ; C4 : 1 ; C2 : 1 ; gardées : 69 |
-| Après le registre des sponsors (nœud 10) | 127 | C5 : 42 ; gardées : **27** |
-| Analyse par Gemini (12 premières) | 12 | C10 : 5 ; C4 : 3 ; C9 : 2 ; C6 : 1 ; retenue : 1 |
+| Collecte Reed + Adzuna | 495 | 339 après retrait des doublons |
+| Après règles C1 à C4 (nœud 06) | **146** | C2 (trop anciennes) : 114 ; C3 (seniors) : 78 ; C4 : 1 |
+| Après le registre des sponsors (nœud 10) | **48** | C5 : 98 offres écartées |
+| Analyse par Gemini (12 premières) | 12 | **4 retenues**, 3 C10, 3 C4 (vrais contrats), 2 C6 (trading) |
+
+Les 4 offres retenues : FP&A Analyst (82/100), Data Analyst - music (59), Data Analyst chez Salt Search (50,7), AI Business Analyst - Law Firm (51,5).
 
 Enseignements :
-- Le registre fonctionne : 27 offres sur 69 passent le contrôle des sponsors (les agences de recrutement en sont souvent écartées, ce qui est normal).
-- Les exclusions C4 des offres à 78 000 ou 104 000 par an sont justifiées : Adzuna les marque comme contrats (`contract_type = contract`).
-- Deux vrais défauts sont apparus, et corrigés (D15, D16).
-- Avec le seuil à 50, la même série aurait retenu **2 offres sur 12** (au lieu de 1). Le rendement reste modeste : la plupart des offres Data à Londres sont dans le secteur « autre », qui ne reçoit que 0,3 sur 1 au critère « secteur ». C'est une conséquence du cahier des charges, à ajuster si l'utilisatrice veut plus d'offres.
+- Reed renvoie beaucoup d'offres anciennes (médiane : 14 jours) ; la règle C2 les écarte à juste titre. Adzuna renvoie des offres de 0 à 2 jours.
+- Le registre fonctionne : 48 offres sur 146 passent le contrôle des sponsors (les agences de recrutement en sont souvent écartées).
+- Les exclusions C4 restantes sont justifiées : ce sont de vrais contrats (tarifs à la journée, « umbrella », « outside IR35 »).
+- Trois vrais défauts sont apparus et ont été corrigés : salaires mensuels lus comme annuels (D15), seuil de score trop dur (D16), contrat temporaire confondu avec un freelance (D17).
+- Sur 12 offres analysées, 4 sont retenues. Les 36 autres offres qui ont passé C5 seront analysées aux exécutions suivantes (elles ne sont pas mémorisées).
+- Limite : l'IA n'est pas parfaitement déterministe ; les scores peuvent varier de quelques points d'une exécution à l'autre.
 
 ---
 
