@@ -1,145 +1,151 @@
 # Veille automatique d'offres Data & IA à Londres (n8n)
 
-Projet réalisé avec **n8n** : un workflow qui surveille chaque semaine les offres d'emploi Data et IA à Londres, ne garde que celles qui correspondent à un profil junior finance/data avec sponsorisation de visa, les note avec une IA (Gemini), et envoie **un seul e-mail de 10 offres** le lundi et le jeudi à 12h30.
+Projet réalisé avec **n8n** : un workflow qui cherche chaque semaine des offres d'emploi Data et IA à Londres, ne garde que celles qui correspondent à un profil junior finance/data avec **sponsorisation de visa**, les note avec une IA (Gemini), et envoie **un seul e-mail de 10 offres** le lundi et le jeudi à 12h30.
 
-> **Statut : projet en cours de test.** Le workflow est construit et validé ; les tests de bout en bout dépendent des quotas des API gratuites (Reed, Adzuna, Gemini).
+Le dépôt contient aussi **3 skills Claude Code** et leur **application** à ce projet, avec des tests exécutables.
 
-## Objectif
+> **Statut.** Le workflow est construit, corrigé et testé nœud par nœud sur des données réelles. Une exécution complète avec envoi d'e-mail a été faite dans n8n. Les réglages finaux (seuils, sources supplémentaires) restent à affiner à l'usage.
 
-Automatiser une tâche répétitive : chercher des offres sur plusieurs sites, éliminer les doublons et les offres non pertinentes, puis recevoir un résumé classé. Contraintes retenues : **Londres uniquement**, aucun Google Sheet, un seul e-mail par envoi, offres déjà envoyées jamais renvoyées.
+---
 
-## Fonctionnement
+## Où trouver quoi
+
+| Je veux… | Ouvrir |
+|---|---|
+| Comprendre les **3 skills** et leurs poids (10 % / 10 % / 80 %) | [`docs/EXPLICATIONS-SKILLS.md`](docs/EXPLICATIONS-SKILLS.md) |
+| Voir les skills **appliqués au projet** (interview, journal des doutes, relecture hostile, test sur données réelles) | [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md) |
+| Lire le **code des nœuds** en JavaScript | [`code/`](code/) |
+| **Lancer les tests** | [`tests/`](tests/) (voir plus bas) |
+| Voir les **fichiers des skills** | [`.claude/skills/`](.claude/skills/) |
+| Voir les **workflows n8n** exportés | [`workflows/`](workflows/) |
+
+## Structure du dépôt
+
+```
+README.md                     Cette page
+docs/
+  EXPLICATIONS-SKILLS.md      Explications écrites des 3 skills
+  APPLICATION-VEILLE-OFFRES.md   Application des skills au projet
+.claude/skills/               Les 3 skills (un dossier chacun, avec un SKILL.md)
+  interview-and-represent/    10 %
+  hostile-review/             10 %
+  doubt-driven-development/   80 %
+code/                         Code JavaScript des 8 nœuds « Code » du workflow, lisible
+tests/                        Tests automatiques (node tests/run-all.js)
+workflows/                    Export des workflows n8n, rangés comme les dossiers de mon n8n
+  projects/  utils/  sandbox/  templates/
+.env.example                  Modèle des clés à renseigner (aucune clé réelle)
+```
+
+## Comment fonctionne le workflow
 
 ```mermaid
 flowchart LR
-  A[Déclencheur<br/>lun. et jeu. 12h30] --> B[4 requêtes<br/>d'intitulés]
+  A[Déclencheur<br/>lun. et jeu. 12h30] --> B[4 intitulés<br/>de recherche]
   B --> C[Reed]
   B --> D[Adzuna]
   C --> E[Fusion]
   D --> E
-  E --> F[Normalisation<br/>règles C1 à C4]
+  E --> F[Règles C1 à C4<br/>doublons, date, senior, contrat]
   F --> G[Registre officiel<br/>des sponsors UK]
   G --> H[Règle C5]
-  H --> I[Limite 12 offres]
-  I --> J[Gemini : extraction<br/>et compétences]
+  H --> I[Limite : 12 offres]
+  I --> J[Gemini :<br/>extraction + compétences]
   J --> K[Score et règles<br/>C4, C6 à C10]
   K --> L[E-mail HTML<br/>10 meilleures offres]
-  L --> M[Mémorisation<br/>des offres envoyées]
+  L --> M[Mémorisation<br/>des offres traitées]
 ```
 
-| Bloc | Rôle |
-|---|---|
-| 1. Requêtes | Génère 4 intitulés : Data Analyst, Financial Data Analyst, AI Solutions Engineer, ML Engineer |
-| 2. Collecte | Appelle les API Reed et Adzuna (Londres), puis fusionne les résultats |
-| 3. Normalisation | Uniformise les champs, supprime les doublons, applique les règles C1 à C4 |
-| 4. Registre sponsors | Télécharge le registre officiel GOV.UK et ne garde que les employeurs autorisés à sponsoriser (règle C5) |
-| 5. IA et score | Gemini extrait contrat, expérience, salaire, secteur ; un score déterministe est calculé |
-| 6. E-mail | Compose et envoie l'e-mail, puis mémorise les offres traitées |
-| 7. Alerte | Un second workflow envoie un e-mail si le premier plante |
+| Bloc | Rôle | Code |
+|---|---|---|
+| 1. Requêtes | 4 intitulés : Data Analyst, Financial Data Analyst, AI Solutions Engineer, ML Engineer | [`02`](code/02-generer-requetes.js) |
+| 2. Collecte | Reed et Adzuna (Londres), puis fusion | (nœuds HTTP) |
+| 3. Règles C1 à C4 | Normalise les offres, supprime les doublons, applique les 4 premières règles | [`06`](code/06-normaliser-regles.js) |
+| 4. Sponsors | Télécharge le registre GOV.UK et ne garde que les employeurs autorisés (C5) | [`08`](code/08-extraire-lien-csv.js), [`10`](code/10-appliquer-sponsors.js) |
+| 5. IA et score | Gemini extrait contrat, expérience, salaire, secteur ; le score est calculé par du code | [`12`](code/12-preparer-requete-ia.js), [`14`](code/14-scorer.js) |
+| 6. E-mail | Compose l'e-mail, l'envoie, puis mémorise les offres | [`16`](code/16-composer-email.js), [`18`](code/18-memoriser.js) |
+| 7. Alerte | Un second workflow prévient par e-mail si le premier plante | `workflows/sandbox/alerte-erreur` |
 
-## Règles de filtrage
+### Règles de filtrage
 
 | Règle | Exclut |
 |---|---|
-| C1 | Offre déjà envoyée ou en double (clé `entreprise|titre|london`) |
+| C1 | Offre déjà envoyée ou en double |
 | C2 | Offre publiée depuis 14 jours ou plus |
-| C3 | Postes Senior, Lead, Head, Principal, Director |
+| C3 | Postes Senior, Lead, Head, Principal, Staff, Director |
 | C4 | Freelance, stage, alternance, contrat à la journée |
 | C5 | Employeur absent du registre des sponsors (Skilled Worker, note A) |
 | C6 | Trading, banque d'investissement, hedge fund |
 | C7 | Contrat de moins de 6 mois |
 | C8 | Plus de 3 ans d'expérience exigés |
 | C9 | Salaire maximum inférieur à 35 000 GBP par an |
-| C10 | Score inférieur à 60, ou adéquation de compétences inférieure à 0,3 |
+| C10 | Score inférieur à 50 (réglé de 60 à 50 après test), ou compétences inférieures à 0,3 |
 
-## Formule de score (sur 100)
+### Formule de score (sur 100)
 
 `Score = 35 × S_secteur + 30 × S_compétences + 20 × S_salaire + 15 × S_expérience`
 
-- **S_secteur** : 1 (finance éligible ou fintech), 0,7 (startup ou scale-up tech), 0,3 (autre)
-- **S_salaire** : `min(1 ; max(0 ; (A − 35 000) / 10 500))`, 0,6 si le salaire n'est pas indiqué
-- **S_expérience** : 1 si 2 ans ou moins, 0,7 jusqu'à 3 ans, 0,6 si non précisé
-- **S_compétences** : note de 0 à 1 donnée par l'IA (recouvrement entre l'offre et le profil)
+Le calcul est fait par du code et non par l'IA : il est reproductible et vérifiable. L'IA extrait seulement les informations et estime l'adéquation des compétences.
 
-Le calcul est fait dans un nœud de code, pas par l'IA : il est reproductible et vérifiable.
+## Résultats des tests
 
-## Choix techniques
+Les nœuds 06, 10 et 14 ont été rejoués sur des **données réelles** (offres Adzuna du jour, registre officiel de 143 136 lignes, 12 appels réels à Gemini) :
 
-- **n8n Cloud** pour l'orchestration, nœuds Code (JavaScript) pour la logique métier.
-- **Gemini** (Google) pour lire le texte des offres. L'IA extrait des informations, mais ne décide pas seule : les règles d'exclusion et le score sont calculés par du code.
-- **Tolérance aux pannes** : nouvelles tentatives sur les appels API, limite de 12 offres analysées par exécution (quota de 15 requêtes par minute), et une offre sans réponse de l'IA est écartée au lieu de bloquer le workflow.
-- **Mémoire anti-doublon** : stockée dans les données internes du workflow (purge après 30 jours). Elle ne fonctionne qu'une fois le workflow activé.
+| Étape | Offres restantes |
+|---|---|
+| Collecte Adzuna (4 recherches, doublons retirés) | 127 |
+| Après C1 à C4 | 69 |
+| Après le registre des sponsors (C5) | **27** |
+| Après analyse par Gemini (12 premières) | 1 à 2 |
 
-## Contenu du dépôt
+Le détail, les défauts trouvés et corrigés (salaires mensuels, seuil trop strict, noms de sponsors, double e-mail) sont dans [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md).
 
-Le dépôt reproduit l'organisation de mon espace n8n, dossier par dossier.
+## Lancer les tests
 
-```
-workflows/
-  projects/
-    veille-offres-data-ia-londres.workflow.ts   Projet principal : veille d'offres, version Gemini (18 nœuds)
-  utils/
-    test-bonjour.workflow.ts                    Petit workflow de test
-  sandbox/
-    alerte-erreur.workflow.ts                   Alerte e-mail quand le workflow principal plante
-    recommandation-voyage-we.workflow.ts        Recommandation de destination pour le week-end
-    demo-eugenia.workflow.ts                    Premier exercice : météo de Paris par e-mail
-    veille-offres-openai.workflow.ts            Première version de la veille, avec OpenAI
-    offres-data-ia.workflow.ts                  Version de travail regroupant veille et alerte
-  templates/
-    learn-workflow-logic-merge-if-switch.workflow.ts   Modèle n8n d'apprentissage, non écrit par moi
-.env.example                                    Modèle des clés à renseigner (aucune clé réelle)
+Il faut seulement [Node.js](https://nodejs.org). Aucune clé n'est nécessaire.
+
+```bash
+node tests/run-all.js
 ```
 
-Les fichiers `.workflow.ts` sont au format du CLI [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli), qui permet de gérer des workflows n8n comme du code. Les clés, adresses e-mail, identifiants de credentials et le profil personnel ont été **retirés** (remplacés par `TODO` ou des valeurs neutres).
+| Test | Vérifie |
+|---|---|
+| `test-regles-titres.js` | Règles C3 et C4 sur 14 titres |
+| `test-sponsors.js` | Règle C5 : rapprochement des noms avec un faux registre |
+| `test-score.js` | Salaires, règles C4 et C6 à C10, score |
+| `test-memorisation.js` | Nœud 16 : e-mail et liste des offres mémorisées |
 
-## Les autres workflows
-
-| Dossier | Workflow | Description |
-|---|---|---|
-| Projects | **Veille offres Data & IA (Gemini)** | Le projet principal décrit plus haut. |
-| Sandbox | **Alerte** | Envoie un e-mail si le projet principal plante. |
-| Sandbox | **Recommandation voyage WE** | Chaque vendredi à 9h : récupère la météo (API Open-Meteo) et les taux de change, écarte les villes pluvieuses, calcule un score et convertit la monnaie, garde le top 3, puis fait rédiger une recommandation par une IA et l'envoie par message. |
-| Sandbox | **Demo Eugenia First Workflow** | Premier exercice : tous les jours à 7h, récupère la météo de Paris (API Open-Meteo) et l'envoie par e-mail. |
-| Sandbox | **Veille (OpenAI) et « Offres Data et IA »** | Versions successives du projet principal, avant le passage à Gemini. |
-| Utils | **Test Bonjour** | Workflow minimal (déclencheur manuel puis un message) pour vérifier la chaîne de publication. |
-| Templates | **Learn Workflow Logic** | Modèle fourni par n8n pour apprendre les nœuds Merge, IF et Switch, gardé comme référence. |
-
-## Skills Claude Code (dossier `.claude/skills`)
-
-Trois skills accompagnent ce projet, avec leur importance :
+## Les 3 skills Claude Code
 
 | Skill | Poids | Rôle |
 |---|---|---|
 | [`interview-and-represent`](.claude/skills/interview-and-represent/SKILL.md) | 10 % | Interroger, puis re-présenter le besoin pour validation |
 | [`hostile-review`](.claude/skills/hostile-review/SKILL.md) | 10 % | Relecture hostile : chercher ce qui casse |
-| [`doubt-driven-development`](.claude/skills/doubt-driven-development/SKILL.md) | 80 % | Développer en doutant et en prouvant chaque étape |
+| [`doubt-driven-development`](.claude/skills/doubt-driven-development/SKILL.md) | 80 % | Développer en doutant, puis en prouvant chaque étape |
 
-- Explications écrites : [`docs/EXPLICATIONS-SKILLS.md`](docs/EXPLICATIONS-SKILLS.md)
-- Application à la veille d'offres : [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md)
-
-## Installation
+## Installation du workflow
 
 1. Créer un compte n8n Cloud (ou lancer n8n avec Docker).
-2. Importer ou publier les workflows du dossier `workflows/projects/`.
+2. Importer les workflows du dossier `workflows/`.
 3. Créer les credentials dans n8n : **Reed** (Basic Auth), **Google Gemini(PaLM) API**, **Gmail**.
-4. Renseigner `app_id` et `app_key` Adzuna dans le nœud « 04 Collecter – Adzuna », l'adresse destinataire dans le nœud « 17 Envoyer – E-mail », et son propre profil dans le nœud « 12 Préparer – Requête IA ».
-5. Exécuter à la main plusieurs fois avant d'activer le workflow.
+4. Renseigner `app_id` et `app_key` Adzuna (nœud 04), l'adresse destinataire (nœud 17) et son propre profil (nœud 12).
+5. Exécuter à la main plusieurs fois avant d'activer le workflow (la mémoire anti-doublon ne fonctionne qu'une fois activé).
 
 ## Sécurité et confidentialité
 
-- Aucune clé API n'est stockée dans ce dépôt. Le fichier `.env` est exclu par `.gitignore`.
-- Le profil du candidat est un texte à fournir soi-même dans le nœud 12 ; il est envoyé à l'API Gemini à chaque analyse d'offre.
+- Aucune clé API dans ce dépôt : le fichier `.env` est exclu par `.gitignore`, et les exports de workflows ont été nettoyés (clés, jetons, e-mails, identifiants).
+- Le profil du candidat est un texte à fournir soi-même dans le nœud 12 ; il est envoyé à l'API Gemini à chaque analyse.
 
-## Difficultés rencontrées
+## Limites connues
 
-- Quotas des API gratuites : erreurs 429 (trop de requêtes) et 503 (modèle surchargé), résolues par une limite d'offres et des nouvelles tentatives.
-- Modèles Gemini retirés ou renommés : le nom du modèle doit être vérifié régulièrement.
-- Le nœud qui télécharge le registre des sponsors devait s'exécuter une seule fois (et non une fois par offre).
+- Quota gratuit de Gemini : 15 requêtes par minute, d'où la limite de 12 offres analysées par exécution.
+- Le rendement reste modeste : la plupart des offres Data à Londres sont dans le secteur « autre », peu valorisé par le score.
+- La source Reed n'a pas pu être rejouée dans les tests sur données réelles (clé non disponible pour ce test).
+- La mémoire anti-doublon n'est testable qu'après activation du workflow.
 
 ## Outils et transparence
 
-Ce projet a été construit avec l'aide de **Claude Code** (assistant IA d'Anthropic) pour générer et valider les workflows, à partir d'un cahier des charges défini par l'auteure. Les tests, les réglages dans n8n et la configuration des comptes ont été faits par l'auteure.
+Projet construit avec l'aide de **Claude Code** (assistant IA d'Anthropic) pour générer, valider et tester les workflows, à partir d'un cahier des charges défini par l'auteure. Les réglages dans n8n, la configuration des comptes et les essais ont été faits par l'auteure.
 
 ## Auteure
 

@@ -59,21 +59,41 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 | D10 | Le profil n'est pas exposé. | Le profil complet est envoyé à Google à chaque analyse. | Moyen | Lecture du code (nœud 12). | Vérifié | **Documenter** et retirer du dépôt (fait). |
 | D11 | Le registre est téléchargé correctement. | Un fichier plus petit ou des colonnes changées arrêtent le nœud 10. | Moyen | Vérifié : l'API GOV.UK répond 200 avec un lien `.csv`. Non vérifié : taille et colonnes. | Supposé | **Documenter** (le nœud échoue avec un message clair). |
 | D12 | Le nœud 15 reçoit une branche par entrée. | Si deux nœuds sont branchés sur la même entrée, alors il s'exécute deux fois et l'e-mail part en double. | Élevé | Lecture du workflow déployé : les nœuds 10 et 14 étaient tous deux reliés à l'entrée 0. | Vérifié | **Corrigé** : le nœud 10 est relié à l'entrée 1. |
-| D13 | La clé Adzuna est valide. | Un espace au début de la clé la rend invalide. | Élevé | Lecture du workflow déployé : la valeur de `app_key` commençait par un espace. | Vérifié | **Corrigé** : espace retiré. |
+| D13 | La clé Adzuna est valide. | Un espace au début de la clé la rend invalide. | Moyen | *Testé* (2 requêtes réelles) : Adzuna accepte la clé avec et sans l'espace. Le doute était infondé ; l'espace est retiré par précaution. | Vérifié | **Garder** la correction préventive, sans impact. |
 | D14 | Seules les offres traitées sont mémorisées. | Si le nœud 16 mémorise toutes les offres, alors celles qui dépassent le Top 10 ne reviennent jamais ; s'il n'en mémorise aucune rejetée, alors les mêmes 12 offres refusées reprennent la place à chaque fois. | Élevé | *Testé* (13 offres simulées) : sont mémorisées les offres du Top 10 et celles rejetées par C4, C6 à C10 ; les offres valables hors Top 10 ne le sont pas, conformément au cahier des charges. | Vérifié | **Corrigé** (nœud 16). |
+| D15 | Les salaires d'Adzuna sont interprétés correctement. | Si une offre indique 3 120 (montant mensuel), alors elle est lue comme 3 120 par an et rejetée par C9. | Élevé | *Observé sur données réelles* : deux offres Tripledot Studios (3 120, temps partiel) étaient exclues par C9. *Testé* : une valeur de 1 000 à 9 999 est maintenant lue comme mensuelle (3 120 devient 37 440 par an). | Vérifié | **Corrigé** (nœud 14). |
+| D16 | Le seuil de score 60 laisse passer des offres. | Si une offre d'un secteur « autre » a des compétences correctes, alors elle ne peut presque jamais atteindre 60. | Élevé | *Observé sur données réelles* : sur 12 offres analysées par Gemini, 1 seule dépassait 60 ; 5 étaient exclues par C10, dont « Data & AI Analyst » à 52,5. | Vérifié | **Corrigé** : seuil abaissé de 60 à 50 (prévu comme réglable dans l'annexe C du cahier des charges). |
 
 ### Bilan du doute
-- **Corrigés** : D1, D2, D3, D4, D5, D6, D12, D13, D14.
-- **Gardés après vérification** : D7.
+- **Corrigés** : D1, D2, D3, D4, D5, D6, D12, D14, D15, D16.
+- **Gardés après vérification** : D7, D13.
 - **Documentés (à surveiller en réel)** : D8, D9, D10, D11.
-- **Tests réalisés** : expressions C3/C4 (15 cas), rapprochement des noms (9 cas), mémorisation du nœud 16 (13 offres simulées). **Non réalisé** : une exécution complète avec envoi d'e-mail.
+- **Tests automatiques** : 4 fichiers dans `tests/` (voir le README), tous verts. **Test sur données réelles** : voir la section suivante. **Non réalisé** : source Reed (clé non disponible pour ce test) et envoi d'e-mail réel depuis ce test.
+
+
+### Test sur données réelles
+
+Pour ne pas se fier à des cas inventés, les vrais nœuds 06, 10 et 14 ont été rejoués sur des données réelles : 4 recherches Adzuna (Londres, 14 derniers jours), le registre officiel des sponsors du jour (143 136 lignes, dont 123 103 « Skilled Worker »), et 12 appels réels à Gemini.
+
+| Étape | Offres | Détail |
+|---|---|---|
+| Collecte Adzuna (4 recherches) | 137 (127 après retrait des doublons) | Publiées il y a 0 à 2 jours |
+| Après règles C1 à C4 (nœud 06) | 127 | C3 (postes seniors) : 56 ; C4 : 1 ; C2 : 1 ; gardées : 69 |
+| Après le registre des sponsors (nœud 10) | 127 | C5 : 42 ; gardées : **27** |
+| Analyse par Gemini (12 premières) | 12 | C10 : 5 ; C4 : 3 ; C9 : 2 ; C6 : 1 ; retenue : 1 |
+
+Enseignements :
+- Le registre fonctionne : 27 offres sur 69 passent le contrôle des sponsors (les agences de recrutement en sont souvent écartées, ce qui est normal).
+- Les exclusions C4 des offres à 78 000 ou 104 000 par an sont justifiées : Adzuna les marque comme contrats (`contract_type = contract`).
+- Deux vrais défauts sont apparus, et corrigés (D15, D16).
+- Avec le seuil à 50, la même série aurait retenu **2 offres sur 12** (au lieu de 1). Le rendement reste modeste : la plupart des offres Data à Londres sont dans le secteur « autre », qui ne reçoit que 0,3 sur 1 au critère « secteur ». C'est une conséquence du cahier des charges, à ajuster si l'utilisatrice veut plus d'offres.
 
 ---
 
 ## 3. Relecture hostile (10 %)
 
 **Livrable examiné** : le workflow déployé dans n8n (18 nœuds + nœud 11b) avant, puis après corrections.
-**Limite** : aucune exécution de bout en bout n'a été faite ; l'analyse repose sur la lecture du workflow, des tests isolés et les incidents observés.
+**Limite** : le workflow complet n'a pas été exécuté par l'auteur de l'analyse ; elle repose sur la lecture du workflow, 4 fichiers de tests, un rejeu des nœuds 06, 10 et 14 sur données réelles, et les incidents observés dans n8n.
 
 ### Failles trouvées
 
@@ -82,10 +102,10 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 - *Preuve* : lecture des connexions du workflow déployé.
 - *Statut* : **corrigé** (nœud 10 relié à l'entrée 1).
 
-**2. Majeure : clé Adzuna invalide (nœud 04)**
-- *Scénario* : la valeur de `app_key` commence par un espace ; Adzuna refuse la requête et une source entière disparaît.
-- *Preuve* : lecture du workflow déployé.
-- *Statut* : **corrigé**.
+**2. Mineure : espace au début de la clé Adzuna (nœud 04)**
+- *Scénario supposé* : Adzuna refuse la clé et une source disparaît.
+- *Preuve* : test réel, Adzuna accepte la clé avec l'espace. Le soupçon était infondé.
+- *Statut* : espace retiré par précaution.
 
 **3. Majeure : sponsors légitimes écartés (nœud 10)**
 - *Scénario* : « FDM Group » est cherché dans un registre où il figure sous « FDM Group (Holdings) PLC » ; similarité 0,64, offre rejetée.
@@ -115,7 +135,12 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 - *Scénario* : parcours et employeur envoyés à un service tiers à chaque analyse.
 - *Statut* : **documenté**.
 
+**9. Majeure : salaires mensuels lus comme annuels, et seuil de score trop dur (nœud 14)**
+- *Scénario* : « 3 120 » (mensuel) est rejeté par C9 ; une offre correcte du secteur « autre » n'atteint presque jamais 60.
+- *Preuve* : test sur données réelles (D15, D16).
+- *Statut* : **corrigé** (mensuel 1 000 à 9 999 ; seuil 50).
+
 ### Verdict
-**Livrable après correction : les 5 failles majeures sont corrigées dans la version « v2 corrigée ».**
-Comptage : 0 bloquante, 5 majeures corrigées, 3 mineures restantes.
+**Livrable après correction : les 5 failles majeures sont corrigées** (double e-mail, sponsors, règles C3/C4, mémorisation, salaires et seuil).
+Comptage : 0 bloquante, 5 majeures corrigées, 4 mineures.
 **Non examiné** : envoi Gmail réel, comportement de la mémoire en production, contenu exact du registre des sponsors.
