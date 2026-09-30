@@ -1,0 +1,5 @@
+.env
+*.env
+.n8ncli-global.json
+n8n/config/sync-state.json
+.DS_Store
