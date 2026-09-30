@@ -1,0 +1,93 @@
+{
+  "id": "4XqEgF138sC4Ei8A",
+  "name": "Demo Eugenia First Workflow",
+  "nodes": [
+    {
+      "id": "7089740e-ef9f-4778-9200-212129a48339",
+      "name": "Déclencheur - Tous les jours à 7h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "46e61370-63f1-44e5-b9ff-19046f4ee59e",
+      "name": "Récupérer la météo de Paris (API Open-Meteo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=48.8534&longitude=2.3488&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=temperature_2m&timezone=Europe%2FBerlin&forecast_days=1",
+        "options": {}
+      }
+    },
+    {
+      "id": "9e3bbbc1-85af-46ad-86fd-45ddb91df180",
+      "name": "Envoyer la météo par mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        0
+      ],
+      "parameters": {
+        "sendTo": "TODO@exemple.com",
+        "subject": "Météo du jour",
+        "emailType": "text",
+        "message": "=Bonjour Natalia ! \n\nAujourd'hui à Paris : entre {{ $json.daily.temperature_2m_min[0] }}°C et {{ $json.daily.temperature_2m_max[0] }}°C. \nRisque de pluie : {{ $json.daily.precipitation_probability_max[0] }}% — {{ $json.daily.precipitation_probability_max[0] >= 50 ? \"prends ton parapluie ☔\" : \"pas besoin de parapluie ☀️\" }}\n\nCordialement,\nNMS",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Déclencheur - Tous les jours à 7h": {
+      "main": [
+        [
+          {
+            "node": "Récupérer la météo de Paris (API Open-Meteo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer la météo de Paris (API Open-Meteo)": {
+      "main": [
+        [
+          {
+            "node": "Envoyer la météo par mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  }
+}

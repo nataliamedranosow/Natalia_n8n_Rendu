@@ -1,6 +1,6 @@
 # Application des 3 skills au projet « Veille offres Data & IA, Londres »
 
-Ce document applique les trois skills au workflow `workflows/projects/veille-offres-data-ia-londres.workflow.ts`.
+Ce document applique les trois skills au workflow `workflows-ts/projects/veille-offres-data-ia-londres.workflow.ts`.
 
 **Convention de preuve.** *Observé* = vu pendant les essais dans n8n ou lors d'un test. *Testé ici* = vérifié par un petit calcul ou script lors de cette analyse. *Supposé* = raisonnable mais non testé. Les corrections ont été **appliquées** dans la version `v2 corrigée` du workflow (voir la section 2).
 

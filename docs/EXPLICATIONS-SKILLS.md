@@ -87,4 +87,9 @@ Dans Claude Code, après avoir ouvert ce dépôt :
 - taper `/interview-and-represent`, `/doubt-driven-development` ou `/hostile-review` ;
 - ou décrire simplement la tâche : Claude choisit le skill grâce à sa `description`.
 
-L'application concrète aux workflows de ce dépôt est dans [`APPLICATION-VEILLE-OFFRES.md`](APPLICATION-VEILLE-OFFRES.md).
+## 8. Skills généraux, application au projet
+
+Les trois skills sont volontairement **généraux** : ils ne parlent pas de la veille d'offres et peuvent servir à n'importe quel projet de code. Le lien avec le projet est fait à part, dans [`APPLICATION-VEILLE-OFFRES.md`](APPLICATION-VEILLE-OFFRES.md), qui montre chaque skill utilisé sur la veille d'offres à Londres.
+
+Cette séparation permet de réutiliser les skills ailleurs sans les modifier, et de montrer clairement ce qui relève de la méthode et ce qui relève de l'exemple.
+

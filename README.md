@@ -17,24 +17,25 @@ Le dépôt contient aussi **3 skills Claude Code** et leur **application** à ce
 | Lire le **code des nœuds** en JavaScript | [`code/`](code/) |
 | **Lancer les tests** | [`tests/`](tests/) (voir plus bas) |
 | Voir les **fichiers des skills** | [`.claude/skills/`](.claude/skills/) |
-| Voir les **workflows n8n** exportés | [`workflows/`](workflows/) |
+| Voir les **workflows en TypeScript** (format n8ncli) | [`workflows-ts/`](workflows-ts/) |
+| **Importer** un workflow dans n8n (fichiers `.json`) | [`n8n-workflows/`](n8n-workflows/) |
 
 ## Structure du dépôt
 
 ```
-README.md                     Cette page
-docs/
-  EXPLICATIONS-SKILLS.md      Explications écrites des 3 skills
-  APPLICATION-VEILLE-OFFRES.md   Application des skills au projet
-.claude/skills/               Les 3 skills (un dossier chacun, avec un SKILL.md)
-  interview-and-represent/    10 %
-  hostile-review/             10 %
-  doubt-driven-development/   80 %
-code/                         Code JavaScript des 8 nœuds « Code » du workflow, lisible
-tests/                        Tests automatiques (node tests/run-all.js)
-workflows/                    Export des workflows n8n, rangés comme les dossiers de mon n8n
-  projects/  utils/  sandbox/  templates/
-.env.example                  Modèle des clés à renseigner (aucune clé réelle)
+README.md                        Cette page
+workflows-ts/                    Workflows en TypeScript (format du CLI n8ncli), rangés comme mes dossiers n8n
+  projects/                      Projet principal : veille d'offres Data & IA à Londres
+  sandbox/                       Alerte d'erreur et exercices (voyage du week-end, météo)
+  templates/                     Modèle n8n d'apprentissage (non écrit par moi)
+n8n-workflows/                   Les mêmes workflows en .json, à importer dans n8n (menu ⋯ > Import from file)
+  projects/  sandbox/  templates/
+code/                            Code JavaScript des 8 nœuds « Code » du projet principal, lisible
+tests/                           Tests automatiques (node tests/run-all.js)
+scripts/ts-vers-json.js          Convertit un workflow .ts en .json
+docs/                            Explications des skills et application au projet
+.claude/skills/                  Les 3 skills (un dossier chacun, avec un SKILL.md)
+.env.example                     Modèle des clés à renseigner (aucune clé réelle)
 ```
 
 ## Comment fonctionne le workflow
@@ -64,7 +65,7 @@ flowchart LR
 | 4. Sponsors | Télécharge le registre GOV.UK et ne garde que les employeurs autorisés (C5) | [`08`](code/08-extraire-lien-csv.js), [`10`](code/10-appliquer-sponsors.js) |
 | 5. IA et score | Gemini extrait contrat, expérience, salaire, secteur ; le score est calculé par du code | [`12`](code/12-preparer-requete-ia.js), [`14`](code/14-scorer.js) |
 | 6. E-mail | Compose l'e-mail, l'envoie, puis mémorise les offres | [`16`](code/16-composer-email.js), [`18`](code/18-memoriser.js) |
-| 7. Alerte | Un second workflow prévient par e-mail si le premier plante | `workflows/sandbox/alerte-erreur` |
+| 7. Alerte | Un second workflow prévient par e-mail si le premier plante | `workflows-ts/sandbox/alerte-erreur` |
 
 ### Règles de filtrage
 
@@ -127,7 +128,7 @@ node tests/run-all.js
 ## Installation du workflow
 
 1. Créer un compte n8n Cloud (ou lancer n8n avec Docker).
-2. Importer les workflows du dossier `workflows/`.
+2. Importer les fichiers `.json` du dossier `n8n-workflows/` (menu **⋯ → Import from file**). Commencer par `projects/` puis `sandbox/alerte-erreur.json`.
 3. Créer les credentials dans n8n : **Reed** (Basic Auth), **Google Gemini(PaLM) API**, **Gmail**.
 4. Renseigner `app_id` et `app_key` Adzuna (nœud 04), l'adresse destinataire (nœud 17) et son propre profil (nœud 12).
 5. Exécuter à la main plusieurs fois avant d'activer le workflow (la mémoire anti-doublon ne fonctionne qu'une fois activé).
