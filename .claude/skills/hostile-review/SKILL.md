@@ -45,7 +45,3 @@ Terminer par : le verdict, le nombre de failles par gravité, et **ce qui n'a pa
 - Critiquer le style sans impact sur le résultat.
 - Empiler des failles hypothétiques pour paraître sévère.
 - Confondre « je n'aime pas » et « ça échoue ».
-
-## Exploration (à faire en premier)
-
-Si le livrable utilise un modèle d'IA, cherche en ligne (skill `exploration-modeles`) les modèles actuellement disponibles avant de juger. Signale comme faille tout modèle **déprécié, en preview en production, ou nettement dépassé** par un modèle stable moins cher ou meilleur, avec la source et la date de vérification.

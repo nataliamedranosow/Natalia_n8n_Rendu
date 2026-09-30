@@ -318,6 +318,6 @@ This project enforces strict style standards configured in `n8n-standards.json`.
 
 ## Exploration des modèles IA (ajout local)
 
-> Bloc ajouté à la main : `n8ncli import-skill` le supprime. Réappliquer après chaque mise à jour, ou garder le skill `exploration-modeles`.
+> Bloc ajouté à la main : `n8ncli import-skill` le supprime. Réappliquer après chaque mise à jour, ou s'appuyer sur le skill `interview`.
 
-Avant de configurer un nœud IA (`googleGemini`, `openAi`, `anthropic`, agents LangChain) ou de garder un `modelId` existant, **cherche en ligne le meilleur modèle actuellement disponible** (pages officielles de l'éditeur, avec la date du jour) au lieu de reprendre un modèle connu de mémoire. Vérifie ensuite que l'identifiant est proposé par le nœud (`n8ncli nodes`), privilégie un modèle stable, note la date de vérification en commentaire/notes du nœud. Détail de la méthode : skill `exploration-modeles`.
+Avant de configurer un nœud IA (`googleGemini`, `openAi`, `anthropic`, agents LangChain) ou de garder un `modelId` existant, **cherche en ligne le meilleur modèle actuellement disponible** (pages officielles de l'éditeur, avec la date du jour) au lieu de reprendre un modèle connu de mémoire. Vérifie ensuite que l'identifiant est proposé par le nœud (`n8ncli nodes`), privilégie un modèle stable, note la date de vérification en commentaire/notes du nœud. Détail de la méthode : temps 2 « Exploration » du skill `interview`.

@@ -44,7 +44,3 @@ Principe : **une affirmation non vérifiée est une hypothèse, pas un fait.** A
 1. Le journal des doutes rempli.
 2. La liste des corrections faites, et celles proposées mais non appliquées.
 3. Les risques restants, avec un responsable et un moyen de les surveiller.
-
-## Exploration (avant de douter)
-
-Dès qu'un modèle d'IA est en jeu (nœud Gemini/OpenAI, prompt, API), la première étape est d'**explorer en ligne** les modèles disponibles avec le skill `exploration-modeles`. Un identifiant écrit de mémoire est un doute de risque **élevé** (« modèle retiré ou dépassé ») : il reçoit le statut **Supposé** tant qu'il n'a pas de source officielle datée.
