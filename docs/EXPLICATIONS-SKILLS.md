@@ -19,7 +19,7 @@ Placés dans le dossier `.claude/skills/` d'un dépôt, les skills sont disponib
 
 | Skill | Poids | Rôle en une phrase |
 |---|---|---|
-| `interview-and-represent` | 10 % | Interroger l'utilisateur, puis lui re-présenter ce qui a été compris pour validation. |
+| `interview` | 10 % | Interroger l'utilisateur, explorer en ligne ce qui existe (meilleurs modèles d'IA à jour), puis re-présenter une fiche pour validation. |
 | `hostile-review` | 10 % | Relire un livrable comme un relecteur hostile, qui cherche ce qui casse. |
 | `doubt-driven-development` | 80 % | Développer en contestant chaque décision par un doute, puis en le vérifiant par une preuve. |
 
@@ -31,7 +31,7 @@ Le poids indique l'importance de chaque skill dans le travail. Le skill principa
 
 ```mermaid
 flowchart LR
-  A[Interview et représentation<br/>10 %] --> B[Développement piloté par le doute<br/>80 %]
+  A[Interview<br/>10 %] --> B[Développement piloté par le doute<br/>80 %]
   B --> C[Relecture hostile<br/>10 %]
   C -->|failles trouvées| B
 ```
@@ -40,7 +40,7 @@ flowchart LR
 2. **Pendant** : on construit en doutant de chaque étape et en prouvant (skill 2).
 3. **À la fin** : un regard extérieur hostile vérifie le résultat (skill 3). S'il trouve des failles, on retourne au développement.
 
-## 4. Skill 1 : Interview et représentation (10 %)
+## 4. Skill 1 : Interview (10 %)
 
 **Idée.** Beaucoup d'erreurs viennent d'une demande mal comprise. Ce skill impose deux temps : d'abord poser des questions (une à la fois), puis **re-présenter** le besoin sous forme d'une fiche courte, que l'utilisateur confirme ou corrige.
 
@@ -84,7 +84,7 @@ flowchart LR
 
 Dans Claude Code, après avoir ouvert ce dépôt :
 
-- taper `/interview-and-represent`, `/doubt-driven-development` ou `/hostile-review` ;
+- taper `/interview`, `/doubt-driven-development` ou `/hostile-review` ;
 - ou décrire simplement la tâche : Claude choisit le skill grâce à sa `description`.
 
 ## 8. Skills généraux, application au projet

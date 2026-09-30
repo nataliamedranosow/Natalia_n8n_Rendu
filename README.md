@@ -10,7 +10,7 @@ Le dépôt contient aussi **3 skills Claude Code** (`.claude/skills/`) et leur a
 README.md
 .claude/
   skills/
-    interview-and-represent/        10 %   interroger puis re-présenter le besoin
+    interview/                   10 %   interroger, explorer en ligne (modèles à jour), re-présenter
     hostile-review/                 10 %   relecture hostile
     doubt-driven-development/       80 %   développer en doutant, puis en prouvant
 workflows-ts/
