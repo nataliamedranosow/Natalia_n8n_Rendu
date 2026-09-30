@@ -74,13 +74,26 @@ Le calcul est fait dans un nœud de code, pas par l'IA : il est reproductible et
 
 ```
 workflows/
-  veille-offres-gemini.workflow.ts   Workflow principal (18 nœuds)
-  alerte-erreur.workflow.ts          Alerte e-mail en cas d'erreur
-  test-bonjour.workflow.ts           Petit workflow de test (premier essai)
-.env.example                         Modèle des clés à renseigner (aucune clé réelle)
+  veille-offres-gemini.workflow.ts        Projet principal, version Gemini (18 nœuds)
+  veille-offres-openai.workflow.ts        Première version, avec OpenAI
+  offres-data-ia.workflow.ts              Version de travail regroupant veille et alerte
+  alerte-erreur.workflow.ts               Alerte e-mail quand le workflow principal plante
+  recommandation-voyage-we.workflow.ts    Projet : recommandation de destination pour le week-end
+  demo-eugenia.workflow.ts                Premier exercice : météo de Paris par e-mail
+  test-bonjour.workflow.ts                Petit workflow de test
+.env.example                              Modèle des clés à renseigner (aucune clé réelle)
 ```
 
-Les fichiers `.workflow.ts` sont au format du CLI [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli), qui permet de gérer des workflows n8n comme du code. Ils ne contiennent **aucune clé ni aucun credential**.
+Les fichiers `.workflow.ts` sont au format du CLI [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli) (commande `n8ncli`), qui permet de gérer des workflows n8n comme du code. Les clés, adresses e-mail, identifiants de credentials et le profil personnel ont été **retirés** (remplacés par `TODO` ou des valeurs neutres).
+
+## Autres workflows du dossier
+
+| Workflow | Description |
+|---|---|
+| **Recommandation voyage WE** | Chaque vendredi à 9h : récupère la météo (API Open-Meteo) et les taux de change, écarte les villes pluvieuses, calcule un score et convertit la monnaie, garde le top 3, puis fait rédiger une recommandation par une IA et l'envoie par message. |
+| **Demo Eugenia First Workflow** | Premier exercice : tous les jours à 7h, récupère la météo de Paris (API Open-Meteo) et l'envoie par e-mail. |
+| **Test Bonjour** | Workflow minimal (déclencheur manuel puis un message) pour vérifier la chaîne de publication. |
+| **Veille offres, version OpenAI et « Offres Data et IA »** | Versions successives du projet principal, avant le passage à Gemini. |
 
 ## Installation
 
