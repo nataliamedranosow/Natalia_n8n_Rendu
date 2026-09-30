@@ -2,7 +2,7 @@
 
 Ce document applique les trois skills au workflow `workflows/projects/veille-offres-data-ia-londres.workflow.ts`.
 
-**Convention de preuve.** *Observé* = vu pendant les essais dans n8n ou lors d'un test. *Testé ici* = vérifié par un petit calcul ou script lors de cette analyse. *Supposé* = raisonnable mais non testé. Les corrections listées sont des **propositions** : elles ne sont pas encore appliquées au workflow.
+**Convention de preuve.** *Observé* = vu pendant les essais dans n8n ou lors d'un test. *Testé ici* = vérifié par un petit calcul ou script lors de cette analyse. *Supposé* = raisonnable mais non testé. Les corrections ont été **appliquées** dans la version `v2 corrigée` du workflow (voir la section 2).
 
 ---
 
@@ -47,74 +47,75 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 
 | # | Affirmation | Doute (si… alors…) | Risque | Preuve | Statut | Décision |
 |---|---|---|---|---|---|---|
-| D1 | La règle C4 écarte freelance, stage, alternance. | Si le titre contient « Early-Stage » ou « Graduate Scheme », alors l'offre est exclue à tort. | Élevé | *Testé ici* : « Data Analyst, Early-Stage Fintech », « Junior Data Analyst - Graduate Scheme » et « Data Analyst - Stage 2 Trials » sont tous exclus (C4). | Vérifié | **Corriger** : retirer `stage` et `graduate scheme` de la liste, ou exiger « stage » seul en fin de titre. |
-| D2 | La règle C3 écarte les postes seniors. | Si le titre contient « Lead » dans un autre sens, alors l'offre est exclue à tort. | Moyen | *Testé ici* : « Lead Generation Data Analyst », « Lead-in Data Analyst » et « Staff Accountant Data » sont exclus (C3). | Vérifié | **Corriger** : cibler « Lead Data », « Team Lead », « Head of ». |
-| D3 | La règle C5 garde les employeurs du registre des sponsors. | Si le nom sur l'offre diffère un peu du nom au registre, alors un vrai sponsor est écarté. | Élevé | *Testé ici* (similarité de Dice, seuil 0,9) : « FDM Group » / « FDM Group (Holdings) PLC » = 0,64 ; « Deloitte LLP » / « Deloitte MCS Limited » = 0,73 ; « Barclays Bank UK PLC » / « Barclays Bank PLC » = 0,89 : tous rejetés. Faux positif possible : « Acme Analytics » / « Acme Analytica » = 0,92. | Vérifié | **Corriger** : retirer les mots de forme juridique (holdings, group, uk) avant comparaison ; comparer aussi par inclusion ; abaisser le seuil vers 0,8 après un test sur de vrais noms. |
-| D4 | Le nœud 07 appelle le registre une seule fois. | Si le nœud 07 reçoit N offres en entrée, alors il fait N appels. | Élevé | *Observé* : le workflow échouait entre les nœuds 06 et 07, après environ 40 s ; ce comportement (N appels) est la cause probable, non confirmée. | Supposé | **Corriger** : activer *Execute Once* (déjà présent dans le fichier du dépôt). |
-| D5 | Le modèle Gemini choisi répond. | Si le modèle est retiré ou surchargé, alors le nœud 13 échoue. | Élevé | *Observé* : `gemini-2.5-flash` a renvoyé « no longer available » (404) ; `gemini-3.1-flash-lite-preview` a renvoyé 503 (« high demand ») puis 200 lors d'un test ; `gemini-3.5-flash-lite` a répondu 200. | Vérifié | **Corriger** : utiliser un modèle stable (`gemini-3.5-flash-lite`), avec nouvelles tentatives. |
-| D6 | 12 offres passent par l'IA par exécution. | Si plus de 15 requêtes partent en une minute, alors Google renvoie une erreur 429. | Élevé | *Observé* : « quota exceeded, limit 15 ». | Vérifié | **Corriger** : nœud *Limit* à 12 offres (proposé ; le fichier du dépôt ne le contient pas). |
-| D7 | Si l'IA échoue, le workflow le signale. | Si Gemini est en panne, alors les offres sont écartées et l'e-mail dit « Aucune nouvelle offre », donc l'utilisatrice croit qu'il n'y en a pas. | Élevé | *Testé ici* : le nœud 14 renvoie `regle_exclusion = 'IA'` sur erreur ou réponse vide, sans alerte. | Vérifié | **Corriger** : compter les offres écartées pour cause d'IA et l'écrire dans le pied de l'e-mail. |
-| D8 | La mémoire anti-doublon fonctionne. | Si le workflow est lancé à la main, alors la mémoire n'est pas enregistrée : la règle C1 ne peut pas être testée. | Moyen | Documentation n8n sur les données statiques : elles ne persistent que pour les exécutions de production. Non testé ici. | Supposé | **Documenter** : tester après activation, sur deux envois successifs. |
-| D9 | Les salaires sont interprétés correctement. | Si une valeur mensuelle (par exemple 3 500) est lue comme annuelle, alors l'offre est rejetée par C9. | Moyen | Lecture du code (nœud 14) : moins de 100 = horaire, moins de 1 000 = journalier, sinon annuel. Non testé sur de vraies données. | Supposé | **Documenter** et vérifier sur les premières réponses réelles. |
-| D10 | Le profil n'est pas exposé. | Si le profil contient l'employeur actuel, alors il est envoyé à Google à chaque analyse. | Moyen | Lecture du code (nœud 12) : le profil complet est inséré dans chaque requête. | Vérifié | **Documenter** : n'y mettre que l'essentiel ; le retirer du dépôt public (fait). |
-| D11 | Le registre est téléchargé correctement. | Si le fichier CSV est plus petit que prévu ou change de colonnes, alors le nœud 10 s'arrête. | Moyen | Vérifié : l'API GOV.UK répond 200 et fournit un lien `.csv`. Non vérifié : taille du fichier et noms de colonnes. | Supposé | **Documenter** : le nœud échoue volontairement avec un message clair. |
+| D1 | La règle C4 écarte freelance, stage, alternance. | Si le titre contient « Early-Stage », alors l'offre est exclue à tort. | Élevé | *Testé* : avant correction, « Data Analyst, Early-Stage Fintech » et « Stage 2 Trials » étaient exclus. Après : ils sont gardés, alors que « Data Analyst (Stage) », « Intern », « Freelance » restent exclus (15 cas de test, 0 échec). | Vérifié | **Corrigé** (nœud 06). Les « graduate schemes » restent exclus, car le cahier des charges les liste. |
+| D2 | La règle C3 écarte les postes seniors. | Si « Lead » désigne autre chose (« Lead Generation »), alors l'offre est exclue à tort. | Moyen | *Testé* : « Lead Generation Data Analyst » était exclu ; il est maintenant gardé. « Lead Data Analyst », « Head of Data », « Senior » restent exclus. Le cahier des charges impose l'exclusion de « Lead » en mot entier : elle est conservée. | Vérifié | **Corrigé** (nœud 06), sans contredire le cahier des charges. |
+| D3 | La règle C5 garde les employeurs du registre des sponsors. | Si le nom sur l'offre diffère un peu du nom au registre, alors un vrai sponsor est écarté. | Élevé | *Testé* : avant, « FDM Group » / « FDM Group (Holdings) PLC » = 0,64 de similarité, donc rejeté. Après ajout d'un « noyau » du nom (sans Group, Holdings, UK, Co, and…), 9 cas de test sur 9 conformes : FDM, Barclays Bank UK, Deloitte, Morgan Stanley, Smith and Williamson trouvés ; « Morgan Sindall » et une entreprise inconnue non trouvés. | Vérifié | **Corrigé** (nœud 10). Le seuil de similarité reste à 0,9 et sera ajusté avec de vrais noms. |
+| D4 | Le nœud 07 appelle le registre une seule fois. | S'il reçoit N offres, alors il fait N appels. | Élevé | *Observé* : échec entre les nœuds 06 et 07 après environ 40 s. Cause probable, non confirmée. | Supposé | **Corrigé** : *Execute Once* activé. |
+| D5 | Le modèle Gemini choisi répond. | Si le modèle est retiré ou surchargé, alors le nœud 13 échoue. | Élevé | *Observé* : `gemini-2.5-flash` retiré (404) ; `gemini-3.1-flash-lite-preview` en surcharge (503) puis OK ; `gemini-3.5-flash-lite` OK (200). | Vérifié | **Corrigé** : `gemini-3.5-flash-lite`, 5 tentatives espacées de 5 s. |
+| D6 | 12 offres passent par l'IA par exécution. | Au-delà de 15 requêtes par minute, alors Google renvoie une erreur 429. | Élevé | *Observé* : « quota exceeded, limit 15 ». | Vérifié | **Corrigé** : nœud *Limit* à 12 offres (nœud 11b). |
+| D7 | Une panne de l'IA est signalée. | Si Gemini échoue, alors l'e-mail dit « Aucune nouvelle offre » sans prévenir. | Élevé | Lecture du workflow déployé : le nœud 13 n'a pas de « Continue on error » et le nœud 14 lève une erreur sur une réponse illisible. Le workflow s'arrête, ce qui déclenche l'alerte, conforme au cahier des charges. Le risque de silence ne concernait qu'une variante tolérante, non déployée. | Vérifié | **Garder**. À vérifier : que le workflow d'alerte est bien relié dans les réglages (*Error Workflow*). |
+| D8 | La mémoire anti-doublon fonctionne. | En lancement manuel, elle n'est pas enregistrée : la règle C1 ne peut pas être testée. | Moyen | Documentation n8n sur les données statiques. Non testé ici. | Supposé | **Documenter** : tester après activation, sur deux envois successifs. |
+| D9 | Les salaires sont interprétés correctement. | Une valeur mensuelle (3 500) lue comme annuelle serait rejetée par C9. | Moyen | Lecture du code (nœud 14). Non testé sur de vraies données. | Supposé | **Documenter**. |
+| D10 | Le profil n'est pas exposé. | Le profil complet est envoyé à Google à chaque analyse. | Moyen | Lecture du code (nœud 12). | Vérifié | **Documenter** et retirer du dépôt (fait). |
+| D11 | Le registre est téléchargé correctement. | Un fichier plus petit ou des colonnes changées arrêtent le nœud 10. | Moyen | Vérifié : l'API GOV.UK répond 200 avec un lien `.csv`. Non vérifié : taille et colonnes. | Supposé | **Documenter** (le nœud échoue avec un message clair). |
+| D12 | Le nœud 15 reçoit une branche par entrée. | Si deux nœuds sont branchés sur la même entrée, alors il s'exécute deux fois et l'e-mail part en double. | Élevé | Lecture du workflow déployé : les nœuds 10 et 14 étaient tous deux reliés à l'entrée 0. | Vérifié | **Corrigé** : le nœud 10 est relié à l'entrée 1. |
+| D13 | La clé Adzuna est valide. | Un espace au début de la clé la rend invalide. | Élevé | Lecture du workflow déployé : la valeur de `app_key` commençait par un espace. | Vérifié | **Corrigé** : espace retiré. |
+| D14 | Seules les offres traitées sont mémorisées. | Si le nœud 16 mémorise toutes les offres, alors celles qui dépassent le Top 10 ne reviennent jamais ; s'il n'en mémorise aucune rejetée, alors les mêmes 12 offres refusées reprennent la place à chaque fois. | Élevé | *Testé* (13 offres simulées) : sont mémorisées les offres du Top 10 et celles rejetées par C4, C6 à C10 ; les offres valables hors Top 10 ne le sont pas, conformément au cahier des charges. | Vérifié | **Corrigé** (nœud 16). |
 
 ### Bilan du doute
-- **Corrections à appliquer** : D1, D2, D3, D5, D6, D7 (et D4 déjà présent dans le fichier du dépôt).
-- **Risques documentés** : D8, D9, D10, D11.
-- **Nombre de doutes levés par une preuve** : 7 sur 11. Les autres restent « supposés » et sont à surveiller lors des premiers envois réels.
+- **Corrigés** : D1, D2, D3, D4, D5, D6, D12, D13, D14.
+- **Gardés après vérification** : D7.
+- **Documentés (à surveiller en réel)** : D8, D9, D10, D11.
+- **Tests réalisés** : expressions C3/C4 (15 cas), rapprochement des noms (9 cas), mémorisation du nœud 16 (13 offres simulées). **Non réalisé** : une exécution complète avec envoi d'e-mail.
 
 ---
 
 ## 3. Relecture hostile (10 %)
 
-**Livrable examiné** : `veille-offres-data-ia-londres.workflow.ts` (18 nœuds) et son alerte.
-**Limite** : le workflow n'a pas été exécuté de bout en bout ; l'analyse repose sur la lecture du code, des tests isolés et les incidents observés.
+**Livrable examiné** : le workflow déployé dans n8n (18 nœuds + nœud 11b) avant, puis après corrections.
+**Limite** : aucune exécution de bout en bout n'a été faite ; l'analyse repose sur la lecture du workflow, des tests isolés et les incidents observés.
 
-### Failles
+### Failles trouvées
 
-**1. Majeure : des offres pertinentes sont écartées à tort (règles C3 et C4)**
-- *Où* : nœud 06, expressions `RE_C3` et `RE_C4`.
-- *Scénario* : une offre « Junior Data Analyst - Graduate Scheme » ou « Data Analyst, Early-Stage Fintech » est exclue avant même l'analyse.
-- *Preuve* : test réalisé (D1, D2).
-- *Correction* : resserrer les expressions.
+**1. Majeure : e-mail potentiellement en double (nœud 15)**
+- *Scénario* : les nœuds 10 et 14 sont branchés sur la même entrée du nœud de fusion ; il s'exécute deux fois, donc deux e-mails.
+- *Preuve* : lecture des connexions du workflow déployé.
+- *Statut* : **corrigé** (nœud 10 relié à l'entrée 1).
 
-**2. Majeure : des employeurs sponsors sont écartés à tort (règle C5)**
-- *Où* : nœud 10, fonction de comparaison des noms.
-- *Scénario* : « FDM Group » est cherché dans un registre où il figure sous « FDM Group (Holdings) PLC » ; la similarité vaut 0,64, donc l'offre est rejetée.
-- *Preuve* : test réalisé (D3).
-- *Correction* : normaliser plus fortement et comparer aussi par inclusion.
+**2. Majeure : clé Adzuna invalide (nœud 04)**
+- *Scénario* : la valeur de `app_key` commence par un espace ; Adzuna refuse la requête et une source entière disparaît.
+- *Preuve* : lecture du workflow déployé.
+- *Statut* : **corrigé**.
 
-**3. Majeure : une panne de l'IA est invisible**
-- *Où* : nœuds 14 et 16.
-- *Scénario* : Gemini est surchargé ; toutes les offres sont écartées ; l'e-mail annonce « Aucune nouvelle offre cette fois ».
-- *Preuve* : test réalisé sur le code du nœud 14 (D7).
-- *Correction* : indiquer dans l'e-mail le nombre d'offres non analysées.
+**3. Majeure : sponsors légitimes écartés (nœud 10)**
+- *Scénario* : « FDM Group » est cherché dans un registre où il figure sous « FDM Group (Holdings) PLC » ; similarité 0,64, offre rejetée.
+- *Preuve* : test réalisé.
+- *Statut* : **corrigé** (comparaison par noyau du nom).
 
-**4. Majeure : le livrable dépend d'un modèle qui change**
-- *Où* : nœud 13.
-- *Scénario* : le modèle configuré est retiré, comme `gemini-2.5-flash` pendant les essais.
-- *Preuve* : incident observé (D5).
-- *Correction* : modèle stable, nouvelles tentatives, alerte sur échec.
+**4. Majeure : offres pertinentes écartées à tort (nœud 06)**
+- *Scénario* : « Data Analyst, Early-Stage Fintech » exclu par la règle C4 ; « Lead Generation Data Analyst » exclu par C3.
+- *Preuve* : test réalisé.
+- *Statut* : **corrigé**.
 
-**5. Mineure : la mémoire anti-doublon n'est pas testable à la main**
-- *Où* : nœuds 06 et 18.
-- *Scénario* : tous les tests manuels réussissent, mais en production les doublons reviennent si la mémoire n'a pas été écrite.
-- *Preuve* : soupçon fondé sur la documentation, non testé.
-- *Correction* : tester sur deux envois réels après activation.
+**5. Majeure : mémorisation contraire au cahier des charges (nœud 16)**
+- *Scénario* : les offres valables hors Top 10 étaient mémorisées et ne revenaient jamais.
+- *Preuve* : test réalisé sur 13 offres simulées.
+- *Statut* : **corrigé**.
 
-**6. Mineure : interprétation des salaires non validée**
-- *Où* : nœud 14.
-- *Scénario* : un salaire mensuel est lu comme annuel et exclu par C9.
-- *Preuve* : lecture du code, non testé sur données réelles.
+**6. Mineure : mémoire anti-doublon non testable à la main**
+- *Preuve* : documentation n8n, non testé ici.
+- *Statut* : **à vérifier** après activation, sur deux envois réels.
 
-**7. Mineure : confidentialité du profil**
-- *Où* : nœud 12.
-- *Scénario* : parcours et employeur sont envoyés à un service tiers à chaque analyse.
+**7. Mineure : interprétation des salaires non validée**
+- *Scénario* : un salaire mensuel lu comme annuel est exclu par C9.
 - *Preuve* : lecture du code.
-- *Correction* : réduire le profil aux compétences.
+- *Statut* : **à surveiller** sur les premières offres réelles.
+
+**8. Mineure : confidentialité du profil**
+- *Scénario* : parcours et employeur envoyés à un service tiers à chaque analyse.
+- *Statut* : **documenté**.
 
 ### Verdict
-**À livrer après correction des failles 1 à 4.**
-Comptage : 4 majeures, 3 mineures, 0 bloquante.
+**Livrable après correction : les 5 failles majeures sont corrigées dans la version « v2 corrigée ».**
+Comptage : 0 bloquante, 5 majeures corrigées, 3 mineures restantes.
 **Non examiné** : envoi Gmail réel, comportement de la mémoire en production, contenu exact du registre des sponsors.
