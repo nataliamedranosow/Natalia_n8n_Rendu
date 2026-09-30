@@ -105,6 +105,19 @@ Les fichiers `.workflow.ts` sont au format du CLI [`n8ncli`](https://www.npmjs.c
 | Utils | **Test Bonjour** | Workflow minimal (déclencheur manuel puis un message) pour vérifier la chaîne de publication. |
 | Templates | **Learn Workflow Logic** | Modèle fourni par n8n pour apprendre les nœuds Merge, IF et Switch, gardé comme référence. |
 
+## Skills Claude Code (dossier `.claude/skills`)
+
+Trois skills accompagnent ce projet, avec leur importance :
+
+| Skill | Poids | Rôle |
+|---|---|---|
+| [`interview-and-represent`](.claude/skills/interview-and-represent/SKILL.md) | 10 % | Interroger, puis re-présenter le besoin pour validation |
+| [`hostile-review`](.claude/skills/hostile-review/SKILL.md) | 10 % | Relecture hostile : chercher ce qui casse |
+| [`doubt-driven-development`](.claude/skills/doubt-driven-development/SKILL.md) | 80 % | Développer en doutant et en prouvant chaque étape |
+
+- Explications écrites : [`docs/EXPLICATIONS-SKILLS.md`](docs/EXPLICATIONS-SKILLS.md)
+- Application à la veille d'offres : [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md)
+
 ## Installation
 
 1. Créer un compte n8n Cloud (ou lancer n8n avec Docker).
