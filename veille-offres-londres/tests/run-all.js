@@ -1,4 +1,4 @@
-// Lance tous les tests : node tests/run-all.js
+// Lance tous les tests : node veille-offres-londres/tests/run-all.js
 const { spawnSync } = require('child_process');
 const fichiers = ['test-regles-titres.js', 'test-sponsors.js', 'test-score.js', 'test-memorisation.js', 'test-prompt-ia.js'];
 let ok = true;

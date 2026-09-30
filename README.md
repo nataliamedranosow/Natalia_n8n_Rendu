@@ -14,8 +14,8 @@ Le dépôt contient aussi **3 skills Claude Code** et leur **application** à ce
 |---|---|
 | Comprendre les **3 skills** et leurs poids (10 % / 10 % / 80 %) | [`docs/EXPLICATIONS-SKILLS.md`](docs/EXPLICATIONS-SKILLS.md) |
 | Voir les skills **appliqués au projet** (interview, journal des doutes, relecture hostile, test sur données réelles) | [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md) |
-| Lire le **code des nœuds** en JavaScript | [`code/`](code/) |
-| **Lancer les tests** | [`tests/`](tests/) (voir plus bas) |
+| Lire le **code des nœuds** en JavaScript | [`veille-offres-londres/code/`](veille-offres-londres/code/) |
+| **Lancer les tests** | [`veille-offres-londres/tests/`](veille-offres-londres/tests/) (voir plus bas) |
 | Voir les **fichiers des skills** | [`.claude/skills/`](.claude/skills/) |
 | Voir les **workflows en TypeScript** (format n8ncli) | [`workflows-ts/`](workflows-ts/) |
 | **Importer** un workflow dans n8n (fichiers `.json`) | [`n8n-workflows/`](n8n-workflows/) |
@@ -23,19 +23,18 @@ Le dépôt contient aussi **3 skills Claude Code** et leur **application** à ce
 ## Structure du dépôt
 
 ```
-README.md                        Cette page
-workflows-ts/                    Workflows en TypeScript (format du CLI n8ncli), rangés comme mes dossiers n8n
-  projects/                      Projet principal : veille d'offres Data & IA à Londres
-  sandbox/                       Alerte d'erreur et exercices (voyage du week-end, météo)
-  templates/                     Modèle n8n d'apprentissage (non écrit par moi)
-n8n-workflows/                   Les mêmes workflows en .json, à importer dans n8n (menu ⋯ > Import from file)
+README.md                    Cette page
+docs/                        Explications des skills + application au projet
+.claude/skills/              Les 3 skills (un dossier chacun, avec un SKILL.md)
+workflows-ts/                Workflows en TypeScript (format n8ncli), rangés comme mes dossiers n8n
   projects/  sandbox/  templates/
-code/                            Code JavaScript des 8 nœuds « Code » du projet principal, lisible
-tests/                           Tests automatiques (node tests/run-all.js)
-scripts/ts-vers-json.js          Convertit un workflow .ts en .json
-docs/                            Explications des skills et application au projet
-.claude/skills/                  Les 3 skills (un dossier chacun, avec un SKILL.md)
-.env.example                     Modèle des clés à renseigner (aucune clé réelle)
+n8n-workflows/               Les mêmes workflows en .json, à importer dans n8n (⋯ > Import from file)
+  projects/  sandbox/  templates/
+veille-offres-londres/       Tout ce qui concerne le projet principal
+  code/                      Code JavaScript des 8 nœuds « Code », lisible
+  tests/                     Tests automatiques
+  scripts/ts-vers-json.js    Convertit un workflow .ts en .json
+.env.example                 Modèle des clés à renseigner (aucune clé réelle)
 ```
 
 ## Comment fonctionne le workflow
@@ -59,12 +58,12 @@ flowchart LR
 
 | Bloc | Rôle | Code |
 |---|---|---|
-| 1. Requêtes | 4 intitulés : Data Analyst, Financial Data Analyst, AI Solutions Engineer, ML Engineer | [`02`](code/02-generer-requetes.js) |
+| 1. Requêtes | 4 intitulés : Data Analyst, Financial Data Analyst, AI Solutions Engineer, ML Engineer | [`02`](veille-offres-londres/code/02-generer-requetes.js) |
 | 2. Collecte | Reed et Adzuna (Londres), puis fusion | (nœuds HTTP) |
-| 3. Règles C1 à C4 | Normalise les offres, supprime les doublons, applique les 4 premières règles | [`06`](code/06-normaliser-regles.js) |
-| 4. Sponsors | Télécharge le registre GOV.UK et ne garde que les employeurs autorisés (C5) | [`08`](code/08-extraire-lien-csv.js), [`10`](code/10-appliquer-sponsors.js) |
-| 5. IA et score | Gemini extrait contrat, expérience, salaire, secteur ; le score est calculé par du code | [`12`](code/12-preparer-requete-ia.js), [`14`](code/14-scorer.js) |
-| 6. E-mail | Compose l'e-mail, l'envoie, puis mémorise les offres | [`16`](code/16-composer-email.js), [`18`](code/18-memoriser.js) |
+| 3. Règles C1 à C4 | Normalise les offres, supprime les doublons, applique les 4 premières règles | [`06`](veille-offres-londres/code/06-normaliser-regles.js) |
+| 4. Sponsors | Télécharge le registre GOV.UK et ne garde que les employeurs autorisés (C5) | [`08`](veille-offres-londres/code/08-extraire-lien-csv.js), [`10`](veille-offres-londres/code/10-appliquer-sponsors.js) |
+| 5. IA et score | Gemini extrait contrat, expérience, salaire, secteur ; le score est calculé par du code | [`12`](veille-offres-londres/code/12-preparer-requete-ia.js), [`14`](veille-offres-londres/code/14-scorer.js) |
+| 6. E-mail | Compose l'e-mail, l'envoie, puis mémorise les offres | [`16`](veille-offres-londres/code/16-composer-email.js), [`18`](veille-offres-londres/code/18-memoriser.js) |
 | 7. Alerte | Un second workflow prévient par e-mail si le premier plante | `workflows-ts/sandbox/alerte-erreur` |
 
 ### Règles de filtrage
@@ -106,7 +105,7 @@ Le détail, les défauts trouvés et corrigés (salaires mensuels, seuil trop st
 Il faut seulement [Node.js](https://nodejs.org). Aucune clé n'est nécessaire.
 
 ```bash
-node tests/run-all.js
+node veille-offres-londres/tests/run-all.js
 ```
 
 | Test | Vérifie |

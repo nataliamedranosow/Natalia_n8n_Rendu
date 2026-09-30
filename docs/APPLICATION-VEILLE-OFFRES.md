@@ -69,7 +69,7 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 - **Corrigés** : D1, D2, D3, D4, D5, D6, D12, D14, D15, D16, D17.
 - **Gardés après vérification** : D7, D13.
 - **Documentés (à surveiller en réel)** : D8, D9, D10, D11.
-- **Tests automatiques** : 4 fichiers dans `tests/` (voir le README), tous verts. **Test sur données réelles** : voir la section suivante. **Non réalisé** : source Reed (clé non disponible pour ce test) et envoi d'e-mail réel depuis ce test.
+- **Tests automatiques** : 5 fichiers dans `veille-offres-londres/tests/` (voir le README), tous verts. **Test sur données réelles** : voir la section suivante. **Non réalisé** : source Reed (clé non disponible pour ce test) et envoi d'e-mail réel depuis ce test.
 
 
 ### Test sur données réelles
