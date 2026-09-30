@@ -49,3 +49,7 @@ Puis demander explicitement : **« Est-ce bien ça ? Qu'est-ce que j'ai mal comp
 - Séparer ce que l'utilisateur a **dit** de ce que j'ai **supposé**. Les suppositions vont dans « à confirmer ».
 - Corriger la fiche après chaque retour, puis la re-présenter jusqu'à validation.
 - Une fois validée, la fiche devient la référence pour la suite (développement, relecture).
+
+## Exploration
+
+Quand le besoin touche un modèle d'IA (choix de Gemini, GPT, etc.), ne propose pas un modèle de mémoire : lance d'abord l'exploration en ligne du skill `exploration-modeles`, puis présente à l'utilisateur les options trouvées (qualité / économique) pour qu'il tranche.
