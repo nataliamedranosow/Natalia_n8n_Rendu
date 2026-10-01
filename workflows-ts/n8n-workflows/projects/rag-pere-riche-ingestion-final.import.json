@@ -231,34 +231,32 @@
     {
       "id": "n11",
       "name": "Augmentation",
-      "type": "@n8n/n8n-nodes-langchain.googleGemini",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
         60,
         700
       ],
       "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "models/gemini-3.5-flash-lite",
-          "mode": "list",
-          "cachedResultName": "models/gemini-3.5-flash-lite"
-        },
-        "messages": {
-          "values": [
-            {
-              "content": "={{ 'Voici un extrait d\\'un livre (section : ' + $json.titre + ').\\n\\n' + $json.contenu + '\\n\\nRéponds exactement en deux lignes, en français :\\nCONTEXTE: une phrase qui situe cet extrait dans le livre.\\nQUESTIONS: trois questions auxquelles cet extrait répond, séparées par \" | \".\\nMOTS-CLES: sept mots-clés importants, séparés par des virgules.' }}"
-            }
-          ]
-        },
-        "builtInTools": {},
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { systemInstruction: { parts: [{ text: \"Tu enrichis des extraits de livre pour la recherche documentaire. Tu n'inventes rien : tu t'appuies uniquement sur l'extrait.\" }] }, contents: [{ parts: [{ text: 'Voici un extrait d\\'un livre (section : ' + $json.titre + ').\\n\\n' + $json.contenu + '\\n\\nRéponds exactement en deux lignes, en français :\\nCONTEXTE: une phrase qui situe cet extrait dans le livre.\\nQUESTIONS: trois questions auxquelles cet extrait répond, séparées par \" | \".\\nMOTS-CLES: sept mots-clés importants, séparés par des virgules.' }] }] } }}",
         "options": {
-          "systemMessage": "Tu enrichis des extraits de livre pour la recherche documentaire. Tu n'inventes rien : tu t'appuies uniquement sur l'extrait."
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 5000
+            }
+          }
         }
       },
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 3000
+      "waitBetweenTries": 5000
     },
     {
       "id": "n12",
@@ -315,7 +313,7 @@
         "options": {
           "batching": {
             "batch": {
-              "batchSize": 5,
+              "batchSize": 1,
               "batchInterval": 1000
             }
           }
