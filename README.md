@@ -1,90 +1,52 @@
-# Veille d'offres Data & IA à Londres (n8n)
+# Natalia · n8n, RAG et skills
 
-Un workflow **n8n** qui cherche des offres Data et IA à Londres (Reed et Adzuna), garde celles qui correspondent à un profil junior finance/data **avec sponsorisation de visa**, les note avec Gemini, et envoie **un e-mail de 10 offres** le lundi et le jeudi à 12h30.
+Dépôt de mes workflows n8n, de mes scripts Supabase et des skills Claude Code que j'utilise pour les construire.
 
-Le dépôt contient aussi **3 skills Claude Code** (`.claude/skills/`) et leur application à ce projet.
-
-## Organisation du dépôt
+## Organisation
 
 ```
-README.md
-.claude/
-  skills/
-    interview/                   10 %   interroger, explorer en ligne (modèles à jour), re-présenter
-    hostile-review/                 10 %   relecture hostile
-    doubt-driven-development/       80 %   développer en doutant, puis en prouvant
-workflows-ts/
-  n8n-workflows/                    workflows n8n en TypeScript (format n8ncli)
-    projects/   veille d'offres Data & IA (projet principal)
-    sandbox/    alerte d'erreur, exercices (voyage du week-end, météo)
-    templates/  modèle n8n d'apprentissage (non écrit par moi)
-    utils/      workflow de test
-veille-offres-londres/
-  code/         code JavaScript des 8 nœuds « Code », lisible
-  tests/        tests automatiques
-docs/           explications des skills et application au projet
-.env.example    modèle des clés (aucune clé réelle)
+projects/     mes trois projets
+  offres-londres-v2/   veille d'offres Data & IA à Londres (Reed, Adzuna, Gemini, e-mail)
+  rag-ingestion/       RAG · du PDF à la base vectorielle (Supabase)
+  rag-answering/       RAG · de la question à la réponse sourcée
+templates/    deux modèles n8n qui m'ont servi de base
+sandbox/      vide : brouillons et essais
+utils/        tout le reste, utile aux projets
+  sql/        scripts Supabase (table, mots-clés Postgres)
+  specs/      textes pour les sticky notes (ingestion, answering)
+  docs/       explications des skills
+.claude/skills/   les skills Claude Code (voir utils/docs/EXPLICATIONS-SKILLS.md)
+.agents/skills/   le skill n8n fourni par n8ncli
 ```
 
-**Par où commencer :** [`docs/EXPLICATIONS-SKILLS.md`](docs/EXPLICATIONS-SKILLS.md) (les skills), puis [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md) (les skills appliqués au projet).
+## Les trois projets
 
-## Fonctionnement
+### RAG · ingestion et answering
+
+Un chatbot qui répond sur un livre (Père riche, père pauvre) uniquement avec ses extraits.
 
 ```mermaid
 flowchart LR
-  A[Lun. et jeu. 12h30] --> B[4 recherches] --> C[Reed + Adzuna]
-  C --> D[Règles C1 à C4] --> E[Registre des sponsors UK<br/>règle C5] --> F[12 offres max] --> G[Gemini]
-  G --> H[Score et règles<br/>C4, C6 à C10] --> I[E-mail de 10 offres] --> J[Mémorisation]
+  A[PDF] --> B[Extraction et nettoyage] --> C[Chunking par titres] --> D[Mots-clés Postgres] --> E[Embedding Gemini] --> F[(Supabase)]
+  Q[Question] --> R[Routing] --> S[Search] --> F
+  S --> T[Filtre sur score] --> U[Reranking] --> V[Génération] --> W[Réponse sourcée]
 ```
 
-| Étape | Code |
-|---|---|
-| Règles C1 à C4 : doublons, date, seniors, contrats | [`06`](veille-offres-londres/code/06-normaliser-regles.js) |
-| Registre officiel des sponsors (C5) | [`08`](veille-offres-londres/code/08-extraire-lien-csv.js), [`10`](veille-offres-londres/code/10-appliquer-sponsors.js) |
-| Requête à Gemini et score sur 100 | [`12`](veille-offres-londres/code/12-preparer-requete-ia.js), [`14`](veille-offres-londres/code/14-scorer.js) |
-| E-mail et mémoire anti-doublon | [`16`](veille-offres-londres/code/16-composer-email.js), [`18`](veille-offres-londres/code/18-memoriser.js) |
+- Ingestion : [`projects/rag-ingestion`](projects/rag-ingestion)
+- Answering : [`projects/rag-answering`](projects/rag-answering)
+- Base de données : [`utils/sql/supabase.sql`](utils/sql/supabase.sql)
+- Description détaillée (sticky notes) : [`utils/specs`](utils/specs)
 
-**Règles d'exclusion.** C1 doublon · C2 plus de 14 jours · C3 poste senior · C4 contrat freelance, stage, jour · C5 employeur absent du registre des sponsors · C6 trading et banque d'investissement · C7 contrat de moins de 6 mois · C8 plus de 3 ans d'expérience · C9 salaire sous 35 000 £ · C10 score sous 50 ou compétences sous 0,3.
+### Veille d'offres à Londres
 
-**Score.** `35 × secteur + 30 × compétences + 20 × salaire + 15 × expérience`, calculé par du code (l'IA extrait seulement les informations).
+Cherche des offres Data et IA (Reed et Adzuna), garde celles qui ont une sponsorisation de visa, les note avec Gemini et envoie un e-mail de 10 offres le lundi et le jeudi à 12 h 30. Code des nœuds et tests automatiques dans [`projects/offres-londres-v2`](projects/offres-londres-v2).
 
-## Résultats sur données réelles
+Tests : `node projects/offres-londres-v2/tests/run-all.js`.
 
-Nœuds 06, 10, 12 et 14 rejoués sur les offres Reed et Adzuna du jour, le registre officiel (143 136 lignes) et 12 appels réels à Gemini :
+## Utiliser les workflows
 
-| Étape | Offres |
-|---|---|
-| Collecte Reed + Adzuna (sans doublons) | 339 |
-| Après C1 à C4 | 146 |
-| Après le registre des sponsors (C5) | 48 |
-| Analysées par Gemini (12 premières), retenues | 4 |
+Chaque projet a un fichier `.workflow.ts` (format `n8ncli`) et, pour le RAG, un `.import.json` à importer directement dans n8n (nouveau workflow, `⋯`, **Import from file**). Aucune clé n'est dans le dépôt : il faut brancher ses propres credentials. Le modèle des variables est dans `.env.example`.
 
-Défauts trouvés et corrigés : salaires mensuels lus comme annuels, seuil de score trop dur, contrat temporaire pris pour un freelance, noms de sponsors, double e-mail. Détail dans [`docs/APPLICATION-VEILLE-OFFRES.md`](docs/APPLICATION-VEILLE-OFFRES.md).
+## Les skills
 
-## Lancer les tests
-
-Il faut seulement [Node.js](https://nodejs.org), aucune clé.
-
-```bash
-node veille-offres-londres/tests/run-all.js
-```
-
-## Mettre en place le workflow
-
-1. Sur n8n, créer les credentials : **Reed** (Basic Auth), **Google Gemini(PaLM) API**, **Gmail**.
-2. Publier les fichiers de `workflows-ts/n8n-workflows/` avec le CLI [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli).
-3. Renseigner `app_id` et `app_key` Adzuna (nœud 04), l'adresse destinataire (nœud 17) et son propre profil (nœud 12).
-4. Exécuter à la main plusieurs fois avant d'activer (la mémoire anti-doublon ne marche qu'une fois le workflow activé).
-
-## Sécurité et limites
-
-- Aucune clé dans ce dépôt (`.env` exclu). Les workflows exportés sont nettoyés (clés, jetons, e-mails, profil).
-- Le profil du candidat est envoyé à Gemini à chaque analyse.
-- Quota gratuit de Gemini : 15 requêtes par minute, d'où la limite de 12 offres par exécution.
-- Rendement modeste : la plupart des offres Data à Londres sont dans le secteur « autre », peu valorisé par le score.
-
-## Outils et transparence
-
-Projet construit avec l'aide de **Claude Code** (assistant IA d'Anthropic), à partir d'un cahier des charges défini par l'auteure. Les réglages dans n8n, les comptes et les essais ont été faits par l'auteure.
-
-**Auteure :** Natalia Medrano Sow
+Cinq skills dans `.claude/skills/` : `interview`, `n8n-bonnes-pratiques`, `n8n-rag`, `doubt-driven-development` et `hostile-review`. Ils choisissent notamment les modèles d'IA **au meilleur prix, d'après des recherches en ligne datées**. Explications dans [`utils/docs/EXPLICATIONS-SKILLS.md`](utils/docs/EXPLICATIONS-SKILLS.md).

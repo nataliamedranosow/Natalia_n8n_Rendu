@@ -1,5 +1,5 @@
 {
-  "name": "RAG Père riche père pauvre (v2 final)",
+  "name": "RAG Père riche père pauvre INGESTION",
   "nodes": [
     {
       "id": "n0",
@@ -229,34 +229,19 @@
       }
     },
     {
-      "id": "n11",
-      "name": "Augmentation",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
+      "id": "aug-pg",
+      "name": "Augmentation (mots-clés)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
       "position": [
         60,
         700
       ],
       "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { systemInstruction: { parts: [{ text: \"Tu enrichis des extraits de livre pour la recherche documentaire. Tu n'inventes rien : tu t'appuies uniquement sur l'extrait.\" }] }, contents: [{ parts: [{ text: 'Voici un extrait d\\'un livre (section : ' + $json.titre + ').\\n\\n' + $json.contenu + '\\n\\nRéponds exactement en deux lignes, en français :\\nCONTEXTE: une phrase qui situe cet extrait dans le livre.\\nQUESTIONS: trois questions auxquelles cet extrait répond, séparées par \" | \".\\nMOTS-CLES: sept mots-clés importants, séparés par des virgules.' }] }] } }}",
-        "options": {
-          "batching": {
-            "batch": {
-              "batchSize": 1,
-              "batchInterval": 5000
-            }
-          }
-        }
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 5000
+        "operation": "executeQuery",
+        "query": "=select extraire_mots_cles($q${{ $json.contenu }}$q$) as mots_cles;",
+        "options": {}
+      }
     },
     {
       "id": "n12",
@@ -272,20 +257,14 @@
           "assignments": [
             {
               "id": "a0",
-              "name": "augmentation",
-              "value": "={{ $json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || '' }}",
+              "name": "mots_cles",
+              "value": "={{ $json.mots_cles }}",
               "type": "string"
             },
             {
               "id": "a1",
               "name": "texte_a_vectoriser",
-              "value": "={{ $('Chunking (Trigger)').item.json.contenu + '\\n\\n' + ($json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || '') }}",
-              "type": "string"
-            },
-            {
-              "id": "a9",
-              "name": "mots_cles",
-              "value": "={{ (($json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || '').match(/MOTS-CL[EÉ]S\\s*:\\s*(.*)/i) || [])[1] || '' }}",
+              "value": "={{ $('Chunking (Trigger)').item.json.contenu + '\\n\\nMots-clés : ' + $json.mots_cles }}",
               "type": "string"
             }
           ]
@@ -314,11 +293,14 @@
           "batching": {
             "batch": {
               "batchSize": 1,
-              "batchInterval": 1000
+              "batchInterval": 5000
             }
           }
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
     },
     {
       "id": "n14",
@@ -514,14 +496,14 @@
       "main": [
         [
           {
-            "node": "Augmentation",
+            "node": "Augmentation (mots-clés)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Augmentation": {
+    "Augmentation (mots-clés)": {
       "main": [
         [
           {

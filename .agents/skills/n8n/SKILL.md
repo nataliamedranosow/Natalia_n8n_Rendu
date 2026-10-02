@@ -316,8 +316,6 @@ This project enforces strict style standards configured in `n8n-standards.json`.
 ### Ignores & Exceptions
 - **Tolerated/Ignored Words:** `sub-workflows, itemId, sub-workflow, defineBelow, executeOnce, high-value, Category-based, low-value, Re-converges, Metadata, high-level, metadata, responseId, embeddings, pgvector, PostgreSQL, retrieval-augmented, LLM, SaaS, backend, LangChain`
 
-## Exploration des modèles IA (ajout local)
+## Compléments du projet (ajout local)
 
-> Bloc ajouté à la main : `n8ncli import-skill` le supprime. Réappliquer après chaque mise à jour, ou s'appuyer sur le skill `interview`.
-
-Avant de configurer un nœud IA (`googleGemini`, `openAi`, `anthropic`, agents LangChain) ou de garder un `modelId` existant, **cherche en ligne le meilleur modèle actuellement disponible** (pages officielles de l'éditeur, avec la date du jour) au lieu de reprendre un modèle connu de mémoire. Vérifie ensuite que l'identifiant est proposé par le nœud (`n8ncli nodes`), privilégie un modèle stable, note la date de vérification en commentaire/notes du nœud. Détail de la méthode : temps 2 « Exploration » du skill `interview`.
+> Bloc ajouté à la main : `n8ncli import-skill` le supprime. Les règles durables vivent dans `.claude/skills/` : `n8n-bonnes-pratiques` (nœuds natifs d'abord, linéaire, choix du modèle au meilleur prix), `n8n-rag` (ingestion et answering) et `interview` (comprendre le besoin, explorer les modèles en ligne).

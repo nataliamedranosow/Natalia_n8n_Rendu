@@ -3,3 +3,14 @@
 .n8ncli-global.json
 n8n/config/sync-state.json
 .DS_Store
+
+# n8ncli ignored files
+n8n/config/unconfigured-credentials.json
+n8n/config/workflow-folders.json
+n8n/references/
+# Copie déployée : contient les vraies valeurs (clé Adzuna, e-mail, profil). Source nettoyée : workflows-ts/
+n8n/workflows/
+
+# Dossier de travail n8ncli local et brouillons
+n8n/
+scratch-remote.ts

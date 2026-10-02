@@ -1,6 +1,6 @@
 # Application des 3 skills au projet « Veille offres Data & IA, Londres »
 
-Ce document applique les trois skills au workflow `workflows-ts/n8n-workflows/projects/veille-offres-data-ia-londres.workflow.ts`.
+Ce document applique les skills au workflow `projects/offres-londres-v2/veille-offres-londres-v2.workflow.ts`.
 
 **Convention de preuve.** *Observé* = vu pendant les essais dans n8n ou lors d'un test. *Testé ici* = vérifié par un petit calcul ou script lors de cette analyse. *Supposé* = raisonnable mais non testé. Les corrections ont été **appliquées** dans la version `v2 corrigée` du workflow (voir la section 2).
 
@@ -69,7 +69,7 @@ Cette fiche sépare ce qui a été **dit** (cahier des charges) de ce qui est **
 - **Corrigés** : D1, D2, D3, D4, D5, D6, D12, D14, D15, D16, D17.
 - **Gardés après vérification** : D7, D13.
 - **Documentés (à surveiller en réel)** : D8, D9, D10, D11.
-- **Tests automatiques** : 5 fichiers dans `veille-offres-londres/tests/` (voir le README), tous verts. **Test sur données réelles** : voir la section suivante. **Non réalisé** : source Reed (clé non disponible pour ce test) et envoi d'e-mail réel depuis ce test.
+- **Tests automatiques** : 5 fichiers dans `projects/offres-londres-v2/tests/` (voir le README), tous verts. **Test sur données réelles** : voir la section suivante. **Non réalisé** : source Reed (clé non disponible pour ce test) et envoi d'e-mail réel depuis ce test.
 
 
 ### Test sur données réelles

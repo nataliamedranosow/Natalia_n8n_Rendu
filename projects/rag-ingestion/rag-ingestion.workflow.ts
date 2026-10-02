@@ -1,7 +1,7 @@
 const formulaire_PDF = trigger({
   type: 'n8n-nodes-base.formTrigger',
   version: 2.6,
-  config: { name: 'Formulaire PDF', parameters: { formTitle: 'Ajouter un livre', formDescription: 'Dépose un PDF avec du texte (pas un scan).', formFields: { values: [{ fieldLabel: 'data', fieldType: 'file', multipleFiles: false, acceptFileTypes: '.pdf', requiredField: true }] }, options: {} }, position: [-200, 300], webhookId: 'rag-pere-riche-ingestion' }
+  config: { name: 'Formulaire PDF', parameters: { formTitle: 'Ajouter un livre', formDescription: 'Dépose un PDF avec du texte (pas un scan).', formFields: { values: [{ fieldLabel: 'data', fieldType: 'file', multipleFiles: false, acceptFileTypes: '.pdf', requiredField: true }] }, options: {} }, position: [-200, 300], webhookId: '8559f271-4bc8-4b24-99b6-734da79df6d6' }
 });
 
 const extract = node({
@@ -49,7 +49,7 @@ const limit = node({
 const chunking_SUB = node({
   type: 'n8n-nodes-base.executeWorkflow',
   version: 1.4,
-  config: { name: 'Chunking (SUB)', parameters: { source: 'database', workflowId: { __rl: true, mode: 'id', value: 'hbWnS7thJLreD3FZ' }, mode: 'once', options: { waitForSubWorkflow: true } }, position: [1880, 300] }
+  config: { name: 'Chunking (SUB)', parameters: { source: 'database', workflowId: { __rl: true, mode: 'id', value: '' }, mode: 'once', options: { waitForSubWorkflow: true } }, position: [1880, 300] }
 });
 
 const erreur_PDF_vide_ou_scann = node({
@@ -64,22 +64,22 @@ const chunking_Trigger = trigger({
   config: { name: 'Chunking (Trigger)', parameters: { inputSource: 'passthrough' }, position: [-200, 700] }
 });
 
-const augmentation = node({
-  type: '@n8n/n8n-nodes-langchain.googleGemini',
-  version: 1.2,
-  config: { name: 'Augmentation', parameters: { modelId: { __rl: true, value: 'models/gemini-3.5-flash-lite', mode: 'list', cachedResultName: 'models/gemini-3.5-flash-lite' }, messages: { values: [{ content: expr('{{ \'Voici un extrait d\\\'un livre (section : \' + $json.titre + \').\\n\\n\' + $json.contenu + \'\\n\\nRéponds exactement en deux lignes, en français :\\nCONTEXTE: une phrase qui situe cet extrait dans le livre.\\nQUESTIONS: trois questions auxquelles cet extrait répond, séparées par " | ".\' }}') }] }, builtInTools: {}, options: { systemMessage: 'Tu enrichis des extraits de livre pour la recherche documentaire. Tu n\'inventes rien : tu t\'appuies uniquement sur l\'extrait.' } }, position: [60, 700], retryOnFail: true, maxTries: 3, waitBetweenTries: 3000 }
+const augmentation_mots_cl_s = node({
+  type: 'n8n-nodes-base.postgres',
+  version: 2.7,
+  config: { name: 'Augmentation (mots-clés)', parameters: { operation: 'executeQuery', query: expr('select extraire_mots_cles($q${{ $json.contenu }}$q$) as mots_cles;'), options: {} }, position: [60, 700] }
 });
 
 const pr_parer_le_texte = node({
   type: 'n8n-nodes-base.set',
   version: 3.5,
-  config: { name: 'Préparer le texte', parameters: { assignments: { assignments: [{ id: 'a0', name: 'augmentation', value: expr('{{ $json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || \'\' }}'), type: 'string' }, { id: 'a1', name: 'texte_a_vectoriser', value: expr('{{ $(\'Chunking (Trigger)\').item.json.contenu + \'\\n\\n\' + ($json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || \'\') }}'), type: 'string' }] }, options: {} }, position: [320, 700] }
+  config: { name: 'Préparer le texte', parameters: { assignments: { assignments: [{ id: 'a0', name: 'mots_cles', value: expr('{{ $json.mots_cles }}'), type: 'string' }, { id: 'a1', name: 'texte_a_vectoriser', value: expr('{{ $(\'Chunking (Trigger)\').item.json.contenu + \'\\n\\nMots-clés : \' + $json.mots_cles }}'), type: 'string' }] }, options: {} }, position: [320, 700] }
 });
 
 const embedding = node({
   type: 'n8n-nodes-base.httpRequest',
   version: 4.5,
-  config: { name: 'Embedding', parameters: { method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendBody: true, specifyBody: 'json', jsonBody: expr('{{ { model: \'models/gemini-embedding-001\', content: { parts: [{ text: $json.texte_a_vectoriser }] }, taskType: \'RETRIEVAL_DOCUMENT\' } }}'), options: { batching: { batch: { batchSize: 5, batchInterval: 1000 } } } }, position: [580, 700] }
+  config: { name: 'Embedding', parameters: { method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendBody: true, specifyBody: 'json', jsonBody: expr('{{ { model: \'models/gemini-embedding-001\', content: { parts: [{ text: $json.texte_a_vectoriser }] }, taskType: \'RETRIEVAL_DOCUMENT\' } }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 5000 } } } }, position: [580, 700], retryOnFail: true, maxTries: 5, waitBetweenTries: 5000 }
 });
 
 const vecteur_valide = node({
@@ -91,7 +91,7 @@ const vecteur_valide = node({
 const pr_parer_la_ligne = node({
   type: 'n8n-nodes-base.set',
   version: 3.5,
-  config: { name: 'Préparer la ligne', parameters: { assignments: { assignments: [{ id: 'a0', name: 'content', value: expr('{{ $(\'Chunking (Trigger)\').item.json.contenu }}'), type: 'string' }, { id: 'a1', name: 'metadata', value: expr('{{ { source: $(\'Chunking (Trigger)\').item.json.nom_fichier, titre: $(\'Chunking (Trigger)\').item.json.titre, chunk_index: $(\'Chunking (Trigger)\').item.json.index, chunk_total: $(\'Chunking (Trigger)\').item.json.total, augmentation: $(\'Préparer le texte\').item.json.augmentation, ingested_at: $now.toISO() } }}'), type: 'object' }, { id: 'a2', name: 'embedding', value: expr('{{ \'[\' + $json.embedding.values.join(\',\') + \']\' }}'), type: 'string' }] }, options: {} }, position: [1100, 700] }
+  config: { name: 'Préparer la ligne', parameters: { assignments: { assignments: [{ id: 'a0', name: 'chunk', value: expr('{{ $(\'Chunking (Trigger)\').item.json.contenu }}'), type: 'string' }, { id: 'a1', name: 'embedding', value: expr('{{ \'[\' + $json.embedding.values.join(\',\') + \']\' }}'), type: 'string' }, { id: 'a2', name: 'mots_cles', value: expr('{{ $(\'Préparer le texte\').item.json.mots_cles }}'), type: 'string' }] }, options: {} }, position: [1100, 700] }
 });
 
 const save_Chunk_Embedding = node({
@@ -106,7 +106,7 @@ const erreur_mauvaise_dimension = node({
   config: { name: 'Erreur : mauvaise dimension', parameters: { errorMessage: 'Le vecteur ne fait pas 3072 dimensions : le modèle d\'embedding ne correspond pas à la table Supabase vector(3072).' }, position: [840, 920] }
 });
 
-const wf = workflow('hbWnS7thJLreD3FZ', 'RAG Père riche père pauvre - Ingestion propre', { executionOrder: 'v1' });
+const wf = workflow('', 'RAG Père riche père pauvre INGESTION', { executionOrder: 'v1', availableInMCP: true });
 
 export default wf
   .add(formulaire_PDF)
@@ -118,7 +118,7 @@ export default wf
     .to(limit)
     .to(chunking_SUB)).onFalse(erreur_PDF_vide_ou_scann))
   .add(chunking_Trigger)
-  .to(augmentation)
+  .to(augmentation_mots_cl_s)
   .to(pr_parer_le_texte)
   .to(embedding)
   .to(vecteur_valide.onTrue(pr_parer_la_ligne
