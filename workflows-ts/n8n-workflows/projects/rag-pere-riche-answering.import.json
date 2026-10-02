@@ -1,0 +1,549 @@
+{
+  "name": "RAG Père riche père pauvre - ANSWERING",
+  "nodes": [
+    {
+      "id": "n0",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -200,
+        300
+      ],
+      "parameters": {
+        "public": false,
+        "options": {
+          "responseMode": "lastNode"
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        60,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "question",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "seuil",
+              "value": 0.5,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Routing",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        300
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ 'Question de l\\'utilisateur : ' + $json.question + '\\n\\nRéponds uniquement par un JSON de la forme {\"requete\": \"la question reformulée de façon autonome et précise pour chercher dans le livre\", \"mots_cles\": \"3 à 6 mots-clés séparés par des espaces\"}' }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "systemMessage": "Tu analyses une question sur le livre « Père riche, père pauvre » pour préparer une recherche. Tu réponds uniquement par le JSON demandé."
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "id": "n3",
+      "name": "Routing - Parse",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        580,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "requete",
+              "value": "={{ (() => { try { return JSON.parse(($json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || '').replace(/```json|```/g, '').trim()).requete; } catch (e) { return $('Context').item.json.question; } })() }}",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "mots_cles",
+              "value": "={{ (() => { try { return JSON.parse(($json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || '').replace(/```json|```/g, '').trim()).mots_cles; } catch (e) { return $('Context').item.json.question; } })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Embedding de la requête",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        840,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'models/gemini-embedding-001', content: { parts: [{ text: $json.requete }] }, taskType: 'RETRIEVAL_QUERY' } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "n5",
+      "name": "Search",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=with q as (select '[{{ $json.embedding.values.join(',') }}]'::vector as v, $kw${{ $('Routing - Parse').item.json.mots_cles }}$kw$ as kw)\nselect d.id, d.chunk, d.mots_cles, round((1 - (d.embedding <=> q.v))::numeric, 3)::float as score\nfrom documents d, q\norder by (d.embedding <=> q.v) - case when to_tsvector('french', coalesce(d.chunk, '') || ' ' || coalesce(d.mots_cles, '')) @@ websearch_to_tsquery('french', q.kw) then 0.05 else 0 end\nlimit 10;",
+        "options": {}
+      }
+    },
+    {
+      "id": "n6",
+      "name": "Filter Based on Score",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1360,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "={{ $('Context').first().json.seuil }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "n7",
+      "name": "Aggregate",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1620,
+        300
+      ],
+      "parameters": {
+        "aggregate": "aggregateIndividualFields",
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "id"
+            },
+            {
+              "fieldToAggregate": "chunk"
+            },
+            {
+              "fieldToAggregate": "score"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n8",
+      "name": "Chunks pertinents ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1880,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ ($json.chunk || []).filter(x => x).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Pas de chunk pertinent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1880,
+        520
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "output",
+              "value": "Je ne trouve pas cette information dans le livre.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n10",
+      "name": "Format Chunks",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2140,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "candidats",
+              "value": "={{ $json.chunk.map((c, i) => '[' + $json.id[i] + '] (score ' + $json.score[i] + ') ' + c.slice(0, 1200)).join('\\n\\n') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {},
+        "includeOtherFields": true
+      }
+    },
+    {
+      "id": "n11",
+      "name": "Reranking",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ 'Question : ' + $('Context').item.json.question + '\\n\\nExtraits candidats :\\n' + $json.candidats + '\\n\\nChoisis les 3 extraits les plus utiles pour répondre. Réponds uniquement par un JSON : {\"ids\": [id1, id2, id3]}' }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "systemMessage": "Tu classes des extraits de livre par pertinence. Tu réponds uniquement par le JSON demandé."
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "id": "n12",
+      "name": "Parse Chunks",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2660,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "contexte",
+              "value": "={{ (() => { const f = $('Format Chunks').item.json; let sel = []; try { sel = JSON.parse(($json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || '').replace(/```json|```/g, '').trim()).ids.map(Number); } catch (e) {} const pick = f.id.map((id, i) => (sel.length === 0 ? i < 3 : sel.includes(Number(id))) ? '[' + id + '] ' + f.chunk[i] : null).filter(Boolean); return pick.join('\\n\\n---\\n\\n'); })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n13",
+      "name": "Génération",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2920,
+        300
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ 'Question : ' + $('Context').item.json.question + '\\n\\nExtraits du livre :\\n' + $json.contexte }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "systemMessage": "Tu réponds en français à des questions sur le livre « Père riche, père pauvre ». Tu utilises uniquement les extraits fournis. Si la réponse n'y est pas, tu réponds exactement : « Je ne trouve pas cette information dans le livre. » Tu n'inventes rien et tu cites les numéros d'extraits entre crochets, par exemple [12]."
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "id": "n14",
+      "name": "Réponse",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3180,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "output",
+              "value": "={{ ($json.candidates?.[0]?.content?.parts?.[0]?.text || $json.content?.parts?.[0]?.text || '') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context": {
+      "main": [
+        [
+          {
+            "node": "Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing": {
+      "main": [
+        [
+          {
+            "node": "Routing - Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing - Parse": {
+      "main": [
+        [
+          {
+            "node": "Embedding de la requête",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embedding de la requête": {
+      "main": [
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search": {
+      "main": [
+        [
+          {
+            "node": "Filter Based on Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Based on Score": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Chunks pertinents ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunks pertinents ?": {
+      "main": [
+        [
+          {
+            "node": "Format Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pas de chunk pertinent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Chunks": {
+      "main": [
+        [
+          {
+            "node": "Reranking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranking": {
+      "main": [
+        [
+          {
+            "node": "Parse Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Chunks": {
+      "main": [
+        [
+          {
+            "node": "Génération",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Génération": {
+      "main": [
+        [
+          {
+            "node": "Réponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  }
+}
